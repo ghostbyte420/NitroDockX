@@ -1,0 +1,77 @@
+﻿namespace NitroDock
+{
+    partial class NitroDockMain
+    {
+        /// <summary>
+        ///  Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        ///  Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        ///  Required method for Designer support - do not modify
+        ///  the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            NitroDockMain_OpacityPanel = new OpacityPanel();
+            NitroDockMain_OpacityPanel_Button_Configuration = new Button();
+            NitroDockMain_OpacityPanel.SuspendLayout();
+            SuspendLayout();
+            // 
+            // NitroDockMain_OpacityPanel
+            // 
+            NitroDockMain_OpacityPanel.BackColor = Color.Transparent;
+            NitroDockMain_OpacityPanel.Controls.Add(NitroDockMain_OpacityPanel_Button_Configuration);
+            NitroDockMain_OpacityPanel.Dock = DockStyle.Fill;
+            NitroDockMain_OpacityPanel.Location = new Point(0, 0);
+            NitroDockMain_OpacityPanel.Name = "NitroDockMain_OpacityPanel";
+            NitroDockMain_OpacityPanel.Opacity = 0.5F;
+            NitroDockMain_OpacityPanel.Size = new Size(110, 527);
+            NitroDockMain_OpacityPanel.TabIndex = 0;
+            // 
+            // NitroDockMain_OpacityPanel_Button_Configuration
+            // 
+            NitroDockMain_OpacityPanel_Button_Configuration.Location = new Point(9, 449);
+            NitroDockMain_OpacityPanel_Button_Configuration.Name = "NitroDockMain_OpacityPanel_Button_Configuration";
+            NitroDockMain_OpacityPanel_Button_Configuration.Size = new Size(66, 66);
+            NitroDockMain_OpacityPanel_Button_Configuration.TabIndex = 1;
+            NitroDockMain_OpacityPanel_Button_Configuration.Text = "button1";
+            NitroDockMain_OpacityPanel_Button_Configuration.UseVisualStyleBackColor = true;
+            NitroDockMain_OpacityPanel_Button_Configuration.Click += NitroDockMain_OpacityPanel_Button_Configuration_Click;
+            // 
+            // NitroDockMain
+            // 
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(110, 527);
+            Controls.Add(NitroDockMain_OpacityPanel);
+            FormBorderStyle = FormBorderStyle.None;
+            Name = "NitroDockMain";
+            Opacity = 0.5D;
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Form1";
+            NitroDockMain_OpacityPanel.ResumeLayout(false);
+            ResumeLayout(false);
+        }
+
+        #endregion
+
+        public OpacityPanel NitroDockMain_OpacityPanel;
+        private Button NitroDockMain_OpacityPanel_Button_Configuration;
+    }
+}
