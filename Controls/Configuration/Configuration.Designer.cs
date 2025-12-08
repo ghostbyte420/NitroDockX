@@ -31,13 +31,11 @@
             NitroDockMain_Configuration_OpacityPanel_Label_DockOffset = new Label();
             NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset = new TrackBar();
             NitroDockMain_Configuration_OpacityPanel_Label_DockOpacity = new Label();
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity = new TrackBar();
             NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity = new TrackBar();
             NitroDockMain_Configuration_OpacityPanel_Label_DockPosition = new Label();
             NitroDockMain_Configuration_OpacityPanel_ComboBox_DockPositioning = new ComboBox();
             NitroDockMain_Configuration_OpacityPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity).BeginInit();
             ((System.ComponentModel.ISupportInitialize)NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity).BeginInit();
             SuspendLayout();
             // 
@@ -47,14 +45,13 @@
             NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_Label_DockOffset);
             NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset);
             NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_Label_DockOpacity);
-            NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity);
             NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity);
             NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_Label_DockPosition);
             NitroDockMain_Configuration_OpacityPanel.Controls.Add(NitroDockMain_Configuration_OpacityPanel_ComboBox_DockPositioning);
             NitroDockMain_Configuration_OpacityPanel.Dock = DockStyle.Fill;
             NitroDockMain_Configuration_OpacityPanel.Location = new Point(0, 0);
             NitroDockMain_Configuration_OpacityPanel.Name = "NitroDockMain_Configuration_OpacityPanel";
-            NitroDockMain_Configuration_OpacityPanel.Opacity = 0.5F;
+            NitroDockMain_Configuration_OpacityPanel.Opacity = 1F;
             NitroDockMain_Configuration_OpacityPanel.Size = new Size(486, 547);
             NitroDockMain_Configuration_OpacityPanel.TabIndex = 0;
             // 
@@ -89,16 +86,6 @@
             NitroDockMain_Configuration_OpacityPanel_Label_DockOpacity.Size = new Size(101, 20);
             NitroDockMain_Configuration_OpacityPanel_Label_DockOpacity.TabIndex = 4;
             NitroDockMain_Configuration_OpacityPanel_Label_DockOpacity.Text = "Dock Opacity:";
-            // 
-            // NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity
-            // 
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.AutoSize = false;
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.Location = new Point(113, 106);
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.Maximum = 100;
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.Name = "NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity";
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.Size = new Size(142, 20);
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.TabIndex = 3;
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.TickStyle = TickStyle.None;
             // 
             // NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity
             // 
@@ -137,13 +124,15 @@
             ClientSize = new Size(486, 547);
             Controls.Add(NitroDockMain_Configuration_OpacityPanel);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox = false;
+            MinimizeBox = false;
             Name = "NitroDockMain_Configuration";
             Opacity = 0.5D;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Configuration";
             NitroDockMain_Configuration_OpacityPanel.ResumeLayout(false);
             NitroDockMain_Configuration_OpacityPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset).EndInit();
-            ((System.ComponentModel.ISupportInitialize)NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity).EndInit();
             ((System.ComponentModel.ISupportInitialize)NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity).EndInit();
             ResumeLayout(false);
         }
@@ -153,7 +142,6 @@
         private System.Windows.Forms.Label NitroDockMain_Configuration_OpacityPanel_Label_DockPosition;
         private System.Windows.Forms.ComboBox NitroDockMain_Configuration_OpacityPanel_ComboBox_DockPositioning;
         private System.Windows.Forms.TrackBar NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity;
-        private System.Windows.Forms.TrackBar NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity;
         private Label NitroDockMain_Configuration_OpacityPanel_Label_DockOpacity;
         private TrackBar NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset;
         private Label NitroDockMain_Configuration_OpacityPanel_Label_DockOffset;

@@ -29,30 +29,17 @@
         private void InitializeComponent()
         {
             NitroDockMain_OpacityPanel = new OpacityPanel();
-            NitroDockMain_OpacityPanel_Button_Configuration = new Button();
-            NitroDockMain_OpacityPanel.SuspendLayout();
             SuspendLayout();
             // 
             // NitroDockMain_OpacityPanel
             // 
             NitroDockMain_OpacityPanel.BackColor = Color.Transparent;
-            NitroDockMain_OpacityPanel.Controls.Add(NitroDockMain_OpacityPanel_Button_Configuration);
             NitroDockMain_OpacityPanel.Dock = DockStyle.Fill;
             NitroDockMain_OpacityPanel.Location = new Point(0, 0);
             NitroDockMain_OpacityPanel.Name = "NitroDockMain_OpacityPanel";
             NitroDockMain_OpacityPanel.Opacity = 0.5F;
             NitroDockMain_OpacityPanel.Size = new Size(110, 527);
             NitroDockMain_OpacityPanel.TabIndex = 0;
-            // 
-            // NitroDockMain_OpacityPanel_Button_Configuration
-            // 
-            NitroDockMain_OpacityPanel_Button_Configuration.Location = new Point(9, 449);
-            NitroDockMain_OpacityPanel_Button_Configuration.Name = "NitroDockMain_OpacityPanel_Button_Configuration";
-            NitroDockMain_OpacityPanel_Button_Configuration.Size = new Size(66, 66);
-            NitroDockMain_OpacityPanel_Button_Configuration.TabIndex = 1;
-            NitroDockMain_OpacityPanel_Button_Configuration.Text = "button1";
-            NitroDockMain_OpacityPanel_Button_Configuration.UseVisualStyleBackColor = true;
-            NitroDockMain_OpacityPanel_Button_Configuration.Click += NitroDockMain_OpacityPanel_Button_Configuration_Click;
             // 
             // NitroDockMain
             // 
@@ -65,13 +52,11 @@
             Opacity = 0.5D;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Form1";
-            NitroDockMain_OpacityPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
 
         public OpacityPanel NitroDockMain_OpacityPanel;
-        private Button NitroDockMain_OpacityPanel_Button_Configuration;
     }
 }

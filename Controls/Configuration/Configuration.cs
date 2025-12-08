@@ -21,11 +21,9 @@ namespace NitroDock
             NitroDockMain_Configuration_OpacityPanel_ComboBox_DockPositioning.SelectedItem =
                 _mainForm.currentDockPosition.ToString();
 
-            // Set the initial values for the trackbars
+            // Set the initial values for the remaining trackbars
             NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity.Value =
                 (int)(_mainForm.Opacity * 100);
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.Value =
-                (int)(_mainForm.NitroDockMain_OpacityPanel.Opacity * 100);
             NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset.Value =
                 _mainForm.DockOffset;
 
@@ -36,10 +34,6 @@ namespace NitroDock
             // Update form opacity when the trackbar value changes
             NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity.ValueChanged +=
                 (s, e) => ApplyFormOpacity();
-
-            // Update OpacityPanel opacity when the trackbar value changes
-            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.ValueChanged +=
-                (s, e) => ApplyOpacityPanelOpacity();
 
             // Update dock offset when the trackbar value changes
             NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset.ValueChanged +=
@@ -62,24 +56,6 @@ namespace NitroDock
         {
             float opacity = NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity.Value / 100f;
             _mainForm.Opacity = opacity;
-        }
-
-        private void ApplyOpacityPanelOpacity()
-        {
-            float opacity = NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_Opacity.Value / 100f;
-            _mainForm.NitroDockMain_OpacityPanel.Opacity = opacity;
-
-            // Update all OpacityPanel instances in all open forms
-            foreach (Form form in Application.OpenForms)
-            {
-                foreach (Control control in form.Controls)
-                {
-                    if (control is OpacityPanel opacityPanel)
-                    {
-                        opacityPanel.Opacity = opacity;
-                    }
-                }
-            }
         }
 
         private void ApplyDockOffset()
