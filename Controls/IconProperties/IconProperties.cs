@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 
-namespace NitroDockX
+namespace NitroDock
 {
     public partial class NitroDockMain_IconProperties : Form
     {

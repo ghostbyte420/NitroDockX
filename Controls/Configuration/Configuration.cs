@@ -21,11 +21,15 @@ namespace NitroDock
             NitroDockMain_Configuration_OpacityPanel_ComboBox_DockPositioning.SelectedItem =
                 _mainForm.currentDockPosition.ToString();
 
-            // Set the initial values for the remaining trackbars
+            // Set the initial values for the trackbars
             NitroDockMain_Configuration_OpacityPanel_TrackBar_FormOpacity.Value =
                 (int)(_mainForm.Opacity * 100);
             NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset.Value =
                 _mainForm.DockOffset;
+            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_ResizeIcons.Value =
+                _mainForm.IconSize;
+            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_IconSpacing.Value =
+                _mainForm.IconSpacing;
 
             // Update the dock position when the combo box selection changes
             NitroDockMain_Configuration_OpacityPanel_ComboBox_DockPositioning.SelectedIndexChanged +=
@@ -38,6 +42,14 @@ namespace NitroDock
             // Update dock offset when the trackbar value changes
             NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset.ValueChanged +=
                 (s, e) => ApplyDockOffset();
+
+            // Update icon size when the trackbar value changes
+            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_ResizeIcons.ValueChanged +=
+                (s, e) => ApplyIconSize();
+
+            // Update icon spacing when the trackbar value changes
+            NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_IconSpacing.ValueChanged +=
+                (s, e) => ApplyIconSpacing();
         }
 
         private void ApplySelectedPosition()
@@ -63,6 +75,18 @@ namespace NitroDock
             int offset = NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_DockOffset.Value;
             _mainForm.DockOffset = offset;
             _mainForm.SnapToEdge(_mainForm.currentDockPosition);
+        }
+
+        private void ApplyIconSize()
+        {
+            int newIconSize = NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_ResizeIcons.Value;
+            _mainForm.UpdateAllIconSizes(newIconSize);
+        }
+
+        private void ApplyIconSpacing()
+        {
+            int newIconSpacing = NitroDockMain_Configuration_OpacityPanel_TrackBar_OpacityPanel_IconSpacing.Value;
+            _mainForm.UpdateAllIconSpacings(newIconSpacing);
         }
     }
 }

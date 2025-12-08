@@ -1,4 +1,4 @@
-﻿namespace NitroDockX
+﻿namespace NitroDock
 {
     partial class NitroDockMain_IconProperties
     {

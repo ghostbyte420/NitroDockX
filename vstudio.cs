@@ -2,9 +2,6 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Media;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace NitroDock
@@ -12,15 +9,14 @@ namespace NitroDock
     [ToolboxItem(true)]
     public class OpacityPanel : Panel
     {
-        // Opacity Control for User Controls
-        // 0.35f == 35% opacity || 0.50f == 50% || 1.0f == 100%
         private float _opacity = 0.50f;
 
         public OpacityPanel()
         {
             SetStyle(
                 ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.AllPaintingInWmPaint,
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.Selectable,
                 true);
             BackColor = Color.Transparent;
         }
@@ -36,16 +32,13 @@ namespace NitroDock
                 if (value < 0.0f) _opacity = 0.0f;
                 else if (value > 1.0f) _opacity = 1.0f;
                 else _opacity = value;
-                Invalidate(); // Redraw the panel
+                Invalidate();
             }
         }
 
         protected override void OnPaintBackground(PaintEventArgs e)
         {
-            // Let the parent draw its background first
             base.OnPaintBackground(e);
-
-            // Draw a semi-transparent overlay
             if (_opacity > 0.0f)
             {
                 using (Brush brush = new SolidBrush(Color.FromArgb((int)(_opacity * 255), Color.Black)))
@@ -53,6 +46,12 @@ namespace NitroDock
                     e.Graphics.FillRectangle(brush, ClientRectangle);
                 }
             }
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            Focus();
         }
     }
 }
