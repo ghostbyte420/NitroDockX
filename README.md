@@ -46,4 +46,4 @@
 ## **🛠 Building from Source**
 1. Clone the repository:
    ```sh
-   git clone https://github.com/ghostbyte420/NitroDockX.git
+   git clone https://github.com/yourusername/NitroDockX.git](https://github.com/ghostbyte420/NitroDockX.git
