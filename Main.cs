@@ -122,7 +122,112 @@ namespace NitroDock
             NitroDockMain_OpacityPanel.DragDrop += NitroDockMain_OpacityPanel_DragDrop;
 
             AddConfigButton();
+            LoadSettings();
             SnapToEdge(currentDockPosition);
+        }
+
+        private void LoadSettings()
+        {
+            string iniPath = Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "NitroDockX.ini"
+            );
+
+            if (!File.Exists(iniPath)) return;
+
+            IniFile ini = new IniFile(iniPath);
+
+            // Load dock settings
+            if (Enum.TryParse(ini.Read("DockSettings", "DockPosition"), out DockPosition position))
+                currentDockPosition = position;
+            if (float.TryParse(ini.Read("DockSettings", "DockOpacity"), out float opacity))
+                Opacity = opacity;
+            if (int.TryParse(ini.Read("DockSettings", "DockOffset"), out int offset))
+                DockOffset = offset;
+            if (int.TryParse(ini.Read("DockSettings", "DockOffsetZ"), out int offsetZ))
+                DockOffsetZ = offsetZ;
+            if (int.TryParse(ini.Read("DockSettings", "IconSize"), out int iconSize))
+                IconSize = iconSize;
+            if (int.TryParse(ini.Read("DockSettings", "IconSpacing"), out int iconSpacing))
+                IconSpacing = iconSpacing;
+
+            // Load skin
+            string skinName = ini.Read("DockSettings", "Skin", "Default");
+            string skinMode = ini.Read("DockSettings", "SkinMode", "Stretch");
+            ApplySkin(skinName, skinMode);
+
+            // Load icons
+            int index = 0;
+            while (true)
+            {
+                string path = ini.Read("Icons", $"Icon{index}_Path");
+                if (string.IsNullOrEmpty(path)) break;
+
+                // Check if a button with this path already exists
+                bool buttonExists = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
+                    .Any(b => b.Tag?.ToString() == path && b.Tag?.ToString() != "NitroDockMain_Configuration");
+
+                if (!buttonExists)
+                {
+                    AddButtonForFileOrDirectory(path);
+
+                    string customIcon = ini.Read("Icons", $"Icon{index}_CustomIcon");
+                    if (!string.IsNullOrEmpty(customIcon) && File.Exists(customIcon))
+                    {
+                        Button button = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
+                            .FirstOrDefault(b => b.Tag?.ToString() == path);
+                        if (button != null)
+                        {
+                            try
+                            {
+                                button.Image = ResizeImage(Image.FromFile(customIcon), IconSize, IconSize);
+                                button.Image.Tag = customIcon;
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                index++;
+            }
+        }
+
+        public void ApplySkin(string skinName, string skinMode)
+        {
+            string skinPath = Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "NitroSkins",
+                skinName,
+                "01.png"
+            );
+
+            if (File.Exists(skinPath))
+            {
+                Image skinImage = Image.FromFile(skinPath);
+                NitroDockMain_OpacityPanel.BackgroundImage = skinImage;
+
+                switch (skinMode)
+                {
+                    case "None":
+                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.None;
+                        break;
+                    case "Tile":
+                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Tile;
+                        break;
+                    case "Center":
+                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Center;
+                        break;
+                    case "Stretch":
+                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Stretch;
+                        break;
+                    case "Zoom":
+                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Zoom;
+                        break;
+                }
+            }
+            else
+            {
+                NitroDockMain_OpacityPanel.BackgroundImage = null;
+            }
         }
 
         private void OnMouseMiddleButtonDown(MouseEventArgs e)
@@ -224,6 +329,32 @@ namespace NitroDock
             removeItem.Click += (s, e) => RemoveButton(configButton);
             configContextMenu.Items.Add(removeItem);
             configButton.ContextMenuStrip = configContextMenu;
+
+            // Handle mouse hover events
+            configButton.MouseEnter += (s, e) =>
+            {
+                foreach (ToolStripItem item in configContextMenu.Items)
+                {
+                    if (item.Text == "Remove Item")
+                    {
+                        item.ForeColor = Color.Gray;
+                        break;
+                    }
+                }
+            };
+
+            configButton.MouseLeave += (s, e) =>
+            {
+                foreach (ToolStripItem item in configContextMenu.Items)
+                {
+                    if (item.Text == "Remove Item")
+                    {
+                        item.ForeColor = SystemColors.ControlText;
+                        break;
+                    }
+                }
+            };
+
             configButton.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -239,6 +370,12 @@ namespace NitroDock
         private void ShowIconProperties(Button button)
         {
             NitroDockMain_IconProperties propertiesForm = new NitroDockMain_IconProperties(button);
+
+            if (button.Tag?.ToString() == "NitroDockMain_Configuration")
+            {
+                propertiesForm.HideRemoveOption();
+            }
+
             propertiesForm.ShowDialog();
         }
 
@@ -559,11 +696,9 @@ namespace NitroDock
             Screen screen = Screen.FromControl(this);
             Rectangle workingArea = screen.WorkingArea;
             int dockWidth, dockHeight;
-
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
-
             if (position == DockPosition.Left || position == DockPosition.Right)
             {
                 dockWidth = minDockWidth;
@@ -576,7 +711,6 @@ namespace NitroDock
                 int totalButtonsWidth = buttons.Count * IconSize + (buttons.Count > 0 ? (buttons.Count - 1) * IconSpacing : 0);
                 dockWidth = totalButtonsWidth + 2 * IconSpacing + IconSize;
             }
-
             switch (position)
             {
                 case DockPosition.Left:
@@ -598,9 +732,7 @@ namespace NitroDock
                     );
                     break;
             }
-
             ClientSize = new Size(dockWidth, dockHeight);
-
             Button cfgButton = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .FirstOrDefault(b => b.Tag.ToString() == "NitroDockMain_Configuration");
             if (cfgButton != null)
@@ -613,6 +745,12 @@ namespace NitroDock
 
         private void RemoveButton(Button button)
         {
+            if (button.Tag?.ToString() == "NitroDockMain_Configuration")
+            {
+                MessageBox.Show("The Configuration button cannot be removed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             NitroDockMain_OpacityPanel.Controls.Remove(button);
             button.Dispose();
             RedistributeButtons();

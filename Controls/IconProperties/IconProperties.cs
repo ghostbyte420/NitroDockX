@@ -10,26 +10,43 @@ namespace NitroDock
     {
         private Button targetButton;
         private string nitroIconsPath;
-        private string originalPath; // Store the original path
+        private string originalPath;
 
         public NitroDockMain_IconProperties(Button button)
         {
             InitializeComponent();
             targetButton = button;
             nitroIconsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroIcons");
-            originalPath = targetButton.Tag?.ToString() ?? string.Empty; // Store the original path
+            originalPath = targetButton.Tag?.ToString() ?? string.Empty;
 
-            // Set up the form
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory.Text = nitroIconsPath;
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon.Text =
                 Path.GetFileName(targetButton.Tag?.ToString() ?? "None");
 
-            // Populate the icon preview
             PopulateIconPreview();
-
-            // Set up the Open Directory button
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory.Click +=
                 (s, e) => System.Diagnostics.Process.Start("explorer.exe", nitroIconsPath);
+
+            if (targetButton.Tag?.ToString() == "NitroDockMain_Configuration")
+            {
+                HideRemoveOption();
+            }
+        }
+
+        public void HideRemoveOption()
+        {
+            if (targetButton?.ContextMenuStrip != null)
+            {
+                foreach (ToolStripItem item in targetButton.ContextMenuStrip.Items)
+                {
+                    if (item.Text == "Remove Item")
+                    {
+                        item.ForeColor = Color.Gray;
+                        item.Enabled = false;
+                        break;
+                    }
+                }
+            }
         }
 
         private void PopulateIconPreview()
@@ -74,12 +91,11 @@ namespace NitroDock
                     }
 
                     NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Controls.Add(pic);
-                    x += 74; // Width of icon + margin
-
+                    x += 74;
                     if (x + 74 > maxWidth)
                     {
                         x = 10;
-                        y += 74; // Height of icon + margin
+                        y += 74;
                     }
                 }
             }
@@ -91,7 +107,7 @@ namespace NitroDock
             {
                 NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon.Text = Path.GetFileName(iconPath);
                 targetButton.Image = ResizeImage(Image.FromFile(iconPath), targetButton.Width, targetButton.Height);
-                targetButton.Tag = originalPath; // Ensure the Tag is not overwritten with the icon path
+                targetButton.Image.Tag = iconPath;
                 this.Close();
             }
             catch (Exception ex)
@@ -120,6 +136,7 @@ namespace NitroDock
                     graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
                 }
             }
+
             return destImage;
         }
     }
