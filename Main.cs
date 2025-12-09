@@ -19,25 +19,28 @@ namespace NitroDock
         private Point lastForm;
         private const int minDockWidth = 64 + 10;
         private const int cornerRadius = 24;
-        private const int maxIconSize = 70; // Maximum icon size (50% of 768)
-        private const int maxIconSpacing = 50; // Maximum icon spacing
+        private const int maxIconSize = 70;
+        private const int maxIconSpacing = 50;
         private Button selectedButton = null;
         private bool isIconSelected = false;
         private MouseHook mouseHook;
 
         [DefaultValue(45)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public int IconSize { get; set; } = 45; // Default size
+        public int IconSize { get; set; } = 45;
 
         [DefaultValue(13)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public int IconSpacing { get; set; } = 13; // Default spacing
+        public int IconSpacing { get; set; } = 13;
 
         public enum DockPosition { Left, Right, Top, Bottom }
         public DockPosition currentDockPosition = DockPosition.Right;
 
         [DefaultValue(0)]
         public int DockOffset { get; set; } = 0;
+
+        [DefaultValue(0)]
+        public int DockOffsetZ { get; set; } = 0;
 
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         private static extern int ExtractIconEx(string lpszFile, int nIconIndex, IntPtr[] phiconLarge, IntPtr[] phiconSmall, int nIcons);
@@ -74,12 +77,10 @@ namespace NitroDock
             this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             this.SetStyle(ControlStyles.UserPaint, true);
 
-            // Initialize Mouse Hook
             mouseHook = MouseHook.Instance;
             mouseHook.MouseMiddleButtonDown += OnMouseMiddleButtonDown;
             mouseHook.MouseWheel += OnMouseWheel;
 
-            // Make the form draggable
             NitroDockMain_OpacityPanel.MouseDown += (s, e) =>
             {
                 if (e.Button == MouseButtons.Left)
@@ -110,7 +111,6 @@ namespace NitroDock
                 }
             };
 
-            // Enable drag-and-drop functionality
             NitroDockMain_OpacityPanel.AllowDrop = true;
             NitroDockMain_OpacityPanel.DragEnter += (s, e) =>
             {
@@ -121,10 +121,7 @@ namespace NitroDock
             NitroDockMain_OpacityPanel.DragOver += NitroDockMain_OpacityPanel_DragOver;
             NitroDockMain_OpacityPanel.DragDrop += NitroDockMain_OpacityPanel_DragDrop;
 
-            // Add the configuration button dynamically
             AddConfigButton();
-
-            // Set initial dock position
             SnapToEdge(currentDockPosition);
         }
 
@@ -134,7 +131,6 @@ namespace NitroDock
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Bounds.Contains(clientPoint) && b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
-
             selectedButton = buttons.FirstOrDefault();
             isIconSelected = (selectedButton != null);
             Debug.WriteLine($"Selected button: {selectedButton != null}");
@@ -157,21 +153,18 @@ namespace NitroDock
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
-
             int currentIndex = buttons.IndexOf(selectedButton);
             if (currentIndex == -1)
             {
                 Debug.WriteLine("No selected button found.");
                 return;
             }
-
             int nextIndex = moveUp ? currentIndex - 1 : currentIndex + 1;
             if (nextIndex < 0 || nextIndex >= buttons.Count)
             {
                 Debug.WriteLine("Next index out of bounds.");
                 return;
             }
-
             var nextButton = buttons[nextIndex];
             Point currentLocation = selectedButton.Location;
             selectedButton.Location = nextButton.Location;
@@ -202,7 +195,6 @@ namespace NitroDock
                 FlatAppearance = { BorderSize = 0 },
                 Tag = "NitroDockMain_Configuration"
             };
-
             string configIconPath = Path.Combine(GetNitroIconsPath(), "Config.png");
             if (File.Exists(configIconPath))
             {
@@ -223,20 +215,15 @@ namespace NitroDock
             {
                 configButton.Image = ResizeImage(SystemIcons.Shield.ToBitmap(), IconSize, IconSize);
             }
-
             configButton.ImageAlign = ContentAlignment.MiddleCenter;
-
             ContextMenuStrip configContextMenu = new ContextMenuStrip();
             ToolStripMenuItem propertiesItem = new ToolStripMenuItem("Properties");
             propertiesItem.Click += (s, e) => ShowIconProperties(configButton);
             configContextMenu.Items.Add(propertiesItem);
-
             ToolStripMenuItem removeItem = new ToolStripMenuItem("Remove Item");
             removeItem.Click += (s, e) => RemoveButton(configButton);
             configContextMenu.Items.Add(removeItem);
-
             configButton.ContextMenuStrip = configContextMenu;
-
             configButton.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -245,7 +232,6 @@ namespace NitroDock
                     configForm.Show();
                 }
             };
-
             NitroDockMain_OpacityPanel.Controls.Add(configButton);
             PositionConfigButton(configButton);
         }
@@ -260,7 +246,6 @@ namespace NitroDock
         {
             int buttonWidth = configButton.Width;
             int buttonHeight = configButton.Height;
-
             switch (currentDockPosition)
             {
                 case DockPosition.Left:
@@ -388,18 +373,14 @@ namespace NitroDock
                 button.Image = ResizeImage(GetDefaultIcon().ToBitmap(), IconSize, IconSize);
                 button.ImageAlign = ContentAlignment.MiddleCenter;
             }
-
             ContextMenuStrip contextMenu = new ContextMenuStrip();
             ToolStripMenuItem propertiesItem = new ToolStripMenuItem("Properties");
             propertiesItem.Click += (s, ev) => ShowIconProperties(button);
             contextMenu.Items.Add(propertiesItem);
-
             ToolStripMenuItem removeItem = new ToolStripMenuItem("Remove Item");
             removeItem.Click += (s, ev) => RemoveButton(button);
             contextMenu.Items.Add(removeItem);
-
             button.ContextMenuStrip = contextMenu;
-
             button.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -415,7 +396,6 @@ namespace NitroDock
                     }
                 }
             };
-
             NitroDockMain_OpacityPanel.Controls.Add(button);
         }
 
@@ -516,7 +496,6 @@ namespace NitroDock
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
-
             if (buttons.Count == 0)
             {
                 Button cfgButton = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
@@ -527,20 +506,16 @@ namespace NitroDock
                 }
                 return;
             }
-
             Button cfgButtonLocal = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .FirstOrDefault(b => b.Tag.ToString() == "NitroDockMain_Configuration");
-
             int startY = IconSpacing;
             int startX = IconSpacing;
-
             if (cfgButtonLocal != null)
             {
                 PositionConfigButton(cfgButtonLocal);
                 startY = cfgButtonLocal.Bottom + IconSpacing;
                 startX = cfgButtonLocal.Right + IconSpacing;
             }
-
             switch (currentDockPosition)
             {
                 case DockPosition.Left:
@@ -550,7 +525,6 @@ namespace NitroDock
                         int dockHeight = startY + totalButtonsHeight + IconSpacing;
                         ClientSize = new Size(ClientSize.Width, dockHeight);
                         int centerX = ClientSize.Width / 2;
-
                         for (int i = 0; i < buttons.Count; i++)
                         {
                             buttons[i].Location = new Point(
@@ -567,7 +541,6 @@ namespace NitroDock
                         int dockWidth = startX + totalButtonsWidth + IconSpacing;
                         ClientSize = new Size(dockWidth, ClientSize.Height);
                         int centerY = ClientSize.Height / 2;
-
                         for (int i = 0; i < buttons.Count; i++)
                         {
                             buttons[i].Location = new Point(
@@ -578,7 +551,6 @@ namespace NitroDock
                         break;
                     }
             }
-
             UpdateRoundedRegion();
         }
 
@@ -586,24 +558,21 @@ namespace NitroDock
         {
             Screen screen = Screen.FromControl(this);
             Rectangle workingArea = screen.WorkingArea;
-
             int dockWidth, dockHeight;
+
+            var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
+                .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
+                .ToList();
 
             if (position == DockPosition.Left || position == DockPosition.Right)
             {
                 dockWidth = minDockWidth;
-                var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
-                    .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
-                    .ToList();
                 int totalButtonsHeight = buttons.Count * IconSize + (buttons.Count > 0 ? (buttons.Count - 1) * IconSpacing : 0);
                 dockHeight = totalButtonsHeight + 2 * IconSpacing + IconSize;
             }
             else // Top/Bottom
             {
                 dockHeight = minDockWidth;
-                var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
-                    .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
-                    .ToList();
                 int totalButtonsWidth = buttons.Count * IconSize + (buttons.Count > 0 ? (buttons.Count - 1) * IconSpacing : 0);
                 dockWidth = totalButtonsWidth + 2 * IconSpacing + IconSize;
             }
@@ -611,34 +580,26 @@ namespace NitroDock
             switch (position)
             {
                 case DockPosition.Left:
-                    Location = new Point(
-                        workingArea.Left + DockOffset,
-                        workingArea.Top + (workingArea.Height / 2) - (dockHeight / 2)
-                    );
-                    ClientSize = new Size(dockWidth, dockHeight);
-                    break;
                 case DockPosition.Right:
+                    int maxZOffsetVertical = workingArea.Height - dockHeight;
+                    DockOffsetZ = Math.Max(0, Math.Min(DockOffsetZ, maxZOffsetVertical));
                     Location = new Point(
-                        workingArea.Right - dockWidth - DockOffset,
-                        workingArea.Top + (workingArea.Height / 2) - (dockHeight / 2)
+                        position == DockPosition.Left ? workingArea.Left + DockOffset : workingArea.Right - dockWidth - DockOffset,
+                        workingArea.Top + DockOffsetZ
                     );
-                    ClientSize = new Size(dockWidth, dockHeight);
                     break;
                 case DockPosition.Top:
-                    Location = new Point(
-                        workingArea.Left + (workingArea.Width / 2) - (dockWidth / 2),
-                        workingArea.Top + DockOffset
-                    );
-                    ClientSize = new Size(dockWidth, dockHeight);
-                    break;
                 case DockPosition.Bottom:
+                    int maxZOffsetHorizontal = workingArea.Width - dockWidth;
+                    DockOffsetZ = Math.Max(0, Math.Min(DockOffsetZ, maxZOffsetHorizontal));
                     Location = new Point(
-                        workingArea.Left + (workingArea.Width / 2) - (dockWidth / 2),
-                        workingArea.Bottom - dockHeight - DockOffset
+                        workingArea.Left + DockOffsetZ,
+                        position == DockPosition.Top ? workingArea.Top + DockOffset : workingArea.Bottom - dockHeight - DockOffset
                     );
-                    ClientSize = new Size(dockWidth, dockHeight);
                     break;
             }
+
+            ClientSize = new Size(dockWidth, dockHeight);
 
             Button cfgButton = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .FirstOrDefault(b => b.Tag.ToString() == "NitroDockMain_Configuration");
@@ -646,7 +607,6 @@ namespace NitroDock
             {
                 PositionConfigButton(cfgButton);
             }
-
             RedistributeButtons();
             UpdateRoundedRegion();
         }
@@ -660,9 +620,7 @@ namespace NitroDock
 
         public void UpdateAllIconSizes(int newSize)
         {
-            // Constrain the icon size to the maximum allowed size
             IconSize = Math.Min(newSize, maxIconSize);
-
             foreach (Button button in NitroDockMain_OpacityPanel.Controls.OfType<Button>())
             {
                 string path = button.Tag?.ToString();
@@ -707,16 +665,12 @@ namespace NitroDock
                     }
                 }
             }
-
             SnapToEdge(currentDockPosition);
         }
 
         public void UpdateAllIconSpacings(int newSpacing)
         {
-            // Constrain the spacing to the maximum allowed spacing
             IconSpacing = Math.Min(newSpacing, maxIconSpacing);
-
-            // Redistribute buttons with the new spacing
             RedistributeButtons();
         }
     }
