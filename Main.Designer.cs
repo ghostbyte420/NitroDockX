@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NitroDockMain));
             NitroDockMain_OpacityPanel = new OpacityPanel();
             SuspendLayout();
             // 
@@ -48,10 +49,11 @@
             ClientSize = new Size(110, 527);
             Controls.Add(NitroDockMain_OpacityPanel);
             FormBorderStyle = FormBorderStyle.None;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "NitroDockMain";
             Opacity = 0.5D;
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Form1";
+            Text = "NitroDockX";
             ResumeLayout(false);
         }
 

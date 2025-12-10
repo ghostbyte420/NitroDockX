@@ -28,11 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information = new NitroDock.OpacityPanel();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NitroDockMain_IconProperties));
+            NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information = new OpacityPanel();
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory = new Button();
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory = new TextBox();
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon = new TextBox();
-            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview = new NitroDock.OpacityPanel();
+            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview = new OpacityPanel();
             NitroDockMain_SplitContainer = new SplitContainer();
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)NitroDockMain_SplitContainer).BeginInit();
@@ -112,6 +113,7 @@
             ClientSize = new Size(676, 474);
             Controls.Add(NitroDockMain_SplitContainer);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "NitroDockMain_IconProperties";
