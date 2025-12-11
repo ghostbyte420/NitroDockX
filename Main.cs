@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.DirectoryServices;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -8,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 namespace NitroDock
@@ -42,6 +44,11 @@ namespace NitroDock
         [DefaultValue(0)]
         public int DockOffsetZ { get; set; } = 0;
 
+        public enum GlowColor { Blue, Cyan, Pink, Red, SlateGray, White, Yellow }
+
+        [DefaultValue(GlowColor.Blue)]
+        public GlowColor SelectedGlowColor { get; set; } = GlowColor.Cyan;
+
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         private static extern int ExtractIconEx(string lpszFile, int nIconIndex, IntPtr[] phiconLarge, IntPtr[] phiconSmall, int nIcons);
 
@@ -50,6 +57,12 @@ namespace NitroDock
 
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         private static extern uint SHGetFileInfo(string pszPath, uint dwFileAttributes, out SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        private static extern uint GetShortPathName(string lpszLongPath, StringBuilder lpszShortPath, uint cchBuffer);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        private static extern uint GetLongPathName(string lpszShortPath, StringBuilder lpszLongPath, uint cchBuffer);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         private struct SHFILEINFO
@@ -76,7 +89,6 @@ namespace NitroDock
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
             this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             this.SetStyle(ControlStyles.UserPaint, true);
-
             mouseHook = MouseHook.Instance;
             mouseHook.MouseMiddleButtonDown += OnMouseMiddleButtonDown;
             mouseHook.MouseWheel += OnMouseWheel;
@@ -108,6 +120,7 @@ namespace NitroDock
                 {
                     isDragging = false;
                     SnapToEdge(currentDockPosition);
+                    SaveDockLocation();
                 }
             };
 
@@ -124,82 +137,102 @@ namespace NitroDock
             AddConfigButton();
             LoadSettings();
             SnapToEdge(currentDockPosition);
+            ApplyGlowEffect();
+        }
+
+        private void SaveDockLocation()
+        {
+            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            IniFile ini = new IniFile(iniPath);
+            ini.Write("DockSettings", "DockLocationX", Location.X.ToString());
+            ini.Write("DockSettings", "DockLocationY", Location.Y.ToString());
         }
 
         private void LoadSettings()
         {
-            string iniPath = Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                "NitroDockX.ini"
-            );
-
+            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
             if (!File.Exists(iniPath)) return;
 
             IniFile ini = new IniFile(iniPath);
 
-            // Load dock settings
             if (Enum.TryParse(ini.Read("DockSettings", "DockPosition"), out DockPosition position))
                 currentDockPosition = position;
+
             if (float.TryParse(ini.Read("DockSettings", "DockOpacity"), out float opacity))
                 Opacity = opacity;
+
             if (int.TryParse(ini.Read("DockSettings", "DockOffset"), out int offset))
                 DockOffset = offset;
+
             if (int.TryParse(ini.Read("DockSettings", "DockOffsetZ"), out int offsetZ))
                 DockOffsetZ = offsetZ;
+
+            if (int.TryParse(ini.Read("DockSettings", "DockLocationX"), out int locationX) &&
+                int.TryParse(ini.Read("DockSettings", "DockLocationY"), out int locationY))
+            {
+                Location = new Point(locationX, locationY);
+            }
+
             if (int.TryParse(ini.Read("DockSettings", "IconSize"), out int iconSize))
                 IconSize = iconSize;
+
             if (int.TryParse(ini.Read("DockSettings", "IconSpacing"), out int iconSpacing))
                 IconSpacing = iconSpacing;
 
-            // Load skin
+            if (Enum.TryParse(ini.Read("DockSettings", "GlowColor"), out GlowColor glowColor))
+                SelectedGlowColor = glowColor;
+
             string skinName = ini.Read("DockSettings", "Skin", "Default");
             string skinMode = ini.Read("DockSettings", "SkinMode", "Stretch");
             ApplySkin(skinName, skinMode);
 
-            // Load icons
+            ClearIcons();
+            LoadIcons(ini);
+        }
+
+        private void ClearIcons()
+        {
+            var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
+                .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
+                .ToList();
+
+            foreach (Button button in buttons)
+            {
+                NitroDockMain_OpacityPanel.Controls.Remove(button);
+                button.Dispose();
+            }
+        }
+
+        private void LoadIcons(IniFile ini)
+        {
             int index = 0;
             while (true)
             {
                 string path = ini.Read("Icons", $"Icon{index}_Path");
                 if (string.IsNullOrEmpty(path)) break;
 
-                // Check if a button with this path already exists
-                bool buttonExists = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
-                    .Any(b => b.Tag?.ToString() == path && b.Tag?.ToString() != "NitroDockMain_Configuration");
+                string customIcon = ini.Read("Icons", $"Icon{index}_CustomIcon");
+                Button button = CreateButtonForFileOrDirectory(path);
 
-                if (!buttonExists)
+                if (!string.IsNullOrEmpty(customIcon) && File.Exists(customIcon))
                 {
-                    AddButtonForFileOrDirectory(path);
-
-                    string customIcon = ini.Read("Icons", $"Icon{index}_CustomIcon");
-                    if (!string.IsNullOrEmpty(customIcon) && File.Exists(customIcon))
+                    try
                     {
-                        Button button = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
-                            .FirstOrDefault(b => b.Tag?.ToString() == path);
-                        if (button != null)
-                        {
-                            try
-                            {
-                                button.Image = ResizeImage(Image.FromFile(customIcon), IconSize, IconSize);
-                                button.Image.Tag = customIcon;
-                            }
-                            catch { }
-                        }
+                        button.Image = ResizeImage(Image.FromFile(customIcon), IconSize, IconSize);
+                        button.Image.Tag = customIcon;
                     }
+                    catch { }
                 }
+
+                NitroDockMain_OpacityPanel.Controls.Add(button);
                 index++;
             }
+            RedistributeButtons();
         }
 
         public void ApplySkin(string skinName, string skinMode)
         {
-            string skinPath = Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                "NitroSkins",
-                skinName,
-                "01.png"
-            );
-
+            string skinPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroSkins", skinName, "01.png");
             if (File.Exists(skinPath))
             {
                 Image skinImage = Image.FromFile(skinPath);
@@ -236,9 +269,9 @@ namespace NitroDock
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Bounds.Contains(clientPoint) && b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
+
             selectedButton = buttons.FirstOrDefault();
             isIconSelected = (selectedButton != null);
-            Debug.WriteLine($"Selected button: {selectedButton != null}");
             NitroDockMain_OpacityPanel.Focus();
         }
 
@@ -254,29 +287,23 @@ namespace NitroDock
 
         private void ReorderSelectedButton(bool moveUp)
         {
-            Debug.WriteLine("ReorderSelectedButton called.");
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
+
             int currentIndex = buttons.IndexOf(selectedButton);
-            if (currentIndex == -1)
-            {
-                Debug.WriteLine("No selected button found.");
-                return;
-            }
+            if (currentIndex == -1) return;
+
             int nextIndex = moveUp ? currentIndex - 1 : currentIndex + 1;
-            if (nextIndex < 0 || nextIndex >= buttons.Count)
-            {
-                Debug.WriteLine("Next index out of bounds.");
-                return;
-            }
+            if (nextIndex < 0 || nextIndex >= buttons.Count) return;
+
             var nextButton = buttons[nextIndex];
             Point currentLocation = selectedButton.Location;
             selectedButton.Location = nextButton.Location;
             nextButton.Location = currentLocation;
+
             NitroDockMain_OpacityPanel.Controls.SetChildIndex(selectedButton, nextIndex);
             NitroDockMain_OpacityPanel.Controls.SetChildIndex(nextButton, currentIndex);
-            Debug.WriteLine("Reordering completed.");
         }
 
         private string GetNitroIconsPath()
@@ -300,6 +327,7 @@ namespace NitroDock
                 FlatAppearance = { BorderSize = 0 },
                 Tag = "NitroDockMain_Configuration"
             };
+
             string configIconPath = Path.Combine(GetNitroIconsPath(), "Config.png");
             if (File.Exists(configIconPath))
             {
@@ -320,17 +348,20 @@ namespace NitroDock
             {
                 configButton.Image = ResizeImage(SystemIcons.Shield.ToBitmap(), IconSize, IconSize);
             }
+
             configButton.ImageAlign = ContentAlignment.MiddleCenter;
+
             ContextMenuStrip configContextMenu = new ContextMenuStrip();
             ToolStripMenuItem propertiesItem = new ToolStripMenuItem("Properties");
             propertiesItem.Click += (s, e) => ShowIconProperties(configButton);
             configContextMenu.Items.Add(propertiesItem);
+
             ToolStripMenuItem removeItem = new ToolStripMenuItem("Remove Item");
             removeItem.Click += (s, e) => RemoveButton(configButton);
             configContextMenu.Items.Add(removeItem);
+
             configButton.ContextMenuStrip = configContextMenu;
 
-            // Handle mouse hover events
             configButton.MouseEnter += (s, e) =>
             {
                 foreach (ToolStripItem item in configContextMenu.Items)
@@ -363,6 +394,7 @@ namespace NitroDock
                     configForm.Show();
                 }
             };
+
             NitroDockMain_OpacityPanel.Controls.Add(configButton);
             PositionConfigButton(configButton);
         }
@@ -370,12 +402,10 @@ namespace NitroDock
         private void ShowIconProperties(Button button)
         {
             NitroDockMain_IconProperties propertiesForm = new NitroDockMain_IconProperties(button);
-
             if (button.Tag?.ToString() == "NitroDockMain_Configuration")
             {
                 propertiesForm.HideRemoveOption();
             }
-
             propertiesForm.ShowDialog();
         }
 
@@ -383,6 +413,7 @@ namespace NitroDock
         {
             int buttonWidth = configButton.Width;
             int buttonHeight = configButton.Height;
+
             switch (currentDockPosition)
             {
                 case DockPosition.Left:
@@ -471,15 +502,17 @@ namespace NitroDock
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                Point dropPoint = NitroDockMain_OpacityPanel.PointToClient(new Point(e.X, e.Y));
                 foreach (string filePath in files)
                 {
-                    AddButtonForFileOrDirectory(filePath);
+                    string resolvedPath = ResolveShortcut(filePath);
+                    Button newButton = CreateButtonForFileOrDirectory(resolvedPath);
+                    InsertButtonAtDropPosition(newButton, dropPoint);
                 }
-                RedistributeButtons();
             }
         }
 
-        private void AddButtonForFileOrDirectory(string path)
+        private Button CreateButtonForFileOrDirectory(string path)
         {
             Button button = new Button
             {
@@ -489,6 +522,7 @@ namespace NitroDock
                 FlatAppearance = { BorderSize = 0 },
                 Tag = path
             };
+
             try
             {
                 Icon icon = GetIconForPath(path);
@@ -510,14 +544,28 @@ namespace NitroDock
                 button.Image = ResizeImage(GetDefaultIcon().ToBitmap(), IconSize, IconSize);
                 button.ImageAlign = ContentAlignment.MiddleCenter;
             }
+
             ContextMenuStrip contextMenu = new ContextMenuStrip();
             ToolStripMenuItem propertiesItem = new ToolStripMenuItem("Properties");
             propertiesItem.Click += (s, ev) => ShowIconProperties(button);
             contextMenu.Items.Add(propertiesItem);
+
             ToolStripMenuItem removeItem = new ToolStripMenuItem("Remove Item");
             removeItem.Click += (s, ev) => RemoveButton(button);
             contextMenu.Items.Add(removeItem);
+
+            ToolStripMenuItem clearIniItem = new ToolStripMenuItem("Clear .ini File");
+            clearIniItem.Click += (s, ev) => ClearIniFile();
+            contextMenu.Items.Add(clearIniItem);
+
+            contextMenu.Items.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem exitItem = new ToolStripMenuItem("Exit NitroDockX");
+            exitItem.Click += (s, ev) => Application.Exit();
+            contextMenu.Items.Add(exitItem);
+
             button.ContextMenuStrip = contextMenu;
+
             button.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -533,7 +581,165 @@ namespace NitroDock
                     }
                 }
             };
-            NitroDockMain_OpacityPanel.Controls.Add(button);
+
+            button.MouseEnter += (sender, e) =>
+            {
+                Color glowColor = GetGlowColor(SelectedGlowColor);
+                button.BackColor = Color.FromArgb(50, glowColor);
+            };
+
+            button.MouseLeave += (sender, e) =>
+            {
+                button.BackColor = Color.Transparent;
+            };
+
+            return button;
+        }
+
+        private void ClearIniFile()
+        {
+            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            if (File.Exists(iniPath))
+            {
+                File.WriteAllText(iniPath, string.Empty);
+                MessageBox.Show("The .ini file has been cleared. Restart NitroDockX to apply changes.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void InsertButtonAtDropPosition(Button newButton, Point dropPoint)
+        {
+            var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
+                .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
+                .ToList();
+
+            if (buttons.Count == 0)
+            {
+                NitroDockMain_OpacityPanel.Controls.Add(newButton);
+                RedistributeButtons();
+                return;
+            }
+
+            Button closestButton = null;
+            int minDistance = int.MaxValue;
+
+            foreach (Button button in buttons)
+            {
+                int distance = Math.Abs(button.Top - dropPoint.Y);
+                if (currentDockPosition == DockPosition.Top || currentDockPosition == DockPosition.Bottom)
+                {
+                    distance = Math.Abs(button.Left - dropPoint.X);
+                }
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestButton = button;
+                }
+            }
+
+            if (closestButton != null)
+            {
+                int insertIndex = NitroDockMain_OpacityPanel.Controls.GetChildIndex(closestButton);
+                NitroDockMain_OpacityPanel.Controls.Add(newButton);
+                NitroDockMain_OpacityPanel.Controls.SetChildIndex(newButton, insertIndex);
+            }
+            else
+            {
+                NitroDockMain_OpacityPanel.Controls.Add(newButton);
+            }
+
+            RedistributeButtons();
+        }
+
+        private string ResolveShortcut(string shortcutPath)
+        {
+            if (!shortcutPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                return shortcutPath;
+            }
+
+            try
+            {
+                IShellLinkW shellLink = (IShellLinkW)new ShellLink();
+                IPersistFile persistFile = (IPersistFile)shellLink;
+                persistFile.Load(shortcutPath, 0);
+                StringBuilder targetPath = new StringBuilder(260);
+                shellLink.GetPath(targetPath, targetPath.Capacity, out _, 0);
+                return targetPath.ToString();
+            }
+            catch
+            {
+                return shortcutPath;
+            }
+        }
+
+        [ComImport]
+        [Guid("00021401-0000-0000-C000-000000000046")]
+        private class ShellLink
+        {
+        }
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("000214F9-0000-0000-C000-000000000046")]
+        private interface IShellLinkW
+        {
+            void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, out WIN32_FIND_DATAW pfd, uint fFlags);
+            void GetIDList(out IntPtr ppidl);
+            void SetIDList(IntPtr pidl);
+            void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);
+            void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);
+            void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+            void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);
+            void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
+            void GetHotkey(out ushort pwHotkey);
+            void SetHotkey(ushort wHotkey);
+            void GetShowCmd(out int piShowCmd);
+            void SetShowCmd(int iShowCmd);
+            void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);
+            void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);
+            void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);
+            void Resolve(IntPtr hwnd, uint fFlags);
+            void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
+        }
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("0000010B-0000-0000-C000-000000000046")]
+        private interface IPersistFile
+        {
+            void GetClassID(out Guid pClassID);
+            void IsDirty();
+            void Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);
+            void Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, [MarshalAs(UnmanagedType.Bool)] bool fRemember);
+            void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
+            void GetCurFile([Out, MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WIN32_FIND_DATAW
+        {
+            public uint dwFileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftCreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftLastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftLastWriteTime;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
+        }
+
+        private void AddButtonForFileOrDirectory(string path)
+        {
+            string resolvedPath = ResolveShortcut(path);
+            Button newButton = CreateButtonForFileOrDirectory(resolvedPath);
+            NitroDockMain_OpacityPanel.Controls.Add(newButton);
+            RedistributeButtons();
         }
 
         private Bitmap ResizeImage(Image image, int width, int height)
@@ -541,6 +747,7 @@ namespace NitroDock
             Rectangle destRect = new Rectangle(0, 0, width, height);
             Bitmap destImage = new Bitmap(width, height);
             destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+
             using (Graphics graphics = Graphics.FromImage(destImage))
             {
                 graphics.CompositingMode = CompositingMode.SourceCopy;
@@ -548,12 +755,14 @@ namespace NitroDock
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
                 using (ImageAttributes wrapMode = new ImageAttributes())
                 {
                     wrapMode.SetWrapMode(WrapMode.TileFlipXY);
                     graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
                 }
             }
+
             return destImage;
         }
 
@@ -567,6 +776,11 @@ namespace NitroDock
             {
                 return GetFolderIcon(path);
             }
+            else if (path.Length == 2 && path.EndsWith(":"))
+            {
+                return GetDriveIcon(path);
+            }
+
             return SystemIcons.Application;
         }
 
@@ -582,12 +796,14 @@ namespace NitroDock
                     out shinfo,
                     (uint)Marshal.SizeOf(shinfo),
                     SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES);
+
                 if (shinfo.hIcon != IntPtr.Zero)
                 {
                     return Icon.FromHandle(shinfo.hIcon);
                 }
             }
             catch { }
+
             try
             {
                 IntPtr[] largeIconPtr = new IntPtr[1];
@@ -598,7 +814,28 @@ namespace NitroDock
                 }
             }
             catch { }
+
             return CreateFolderIcon();
+        }
+
+        private Icon GetDriveIcon(string drivePath)
+        {
+            try
+            {
+                DriveInfo drive = new DriveInfo(drivePath);
+                if (drive.DriveType == DriveType.Removable || drive.DriveType == DriveType.Fixed)
+                {
+                    IntPtr[] largeIconPtr = new IntPtr[1];
+                    int result = ExtractIconEx("shell32.dll", 8, largeIconPtr, null, 1);
+                    if (result > 0 && largeIconPtr[0] != IntPtr.Zero)
+                    {
+                        return Icon.FromHandle(largeIconPtr[0]);
+                    }
+                }
+            }
+            catch { }
+
+            return SystemIcons.WinLogo;
         }
 
         private Icon CreateFolderIcon()
@@ -620,6 +857,7 @@ namespace NitroDock
                 g.DrawLine(Pens.DarkGray, 28, 8, 28, 24);
                 g.DrawLine(Pens.DarkGray, 4, 24, 28, 24);
             }
+
             return Icon.FromHandle(folderBitmap.GetHicon());
         }
 
@@ -633,26 +871,33 @@ namespace NitroDock
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
+
             if (buttons.Count == 0)
             {
                 Button cfgButton = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                     .FirstOrDefault(b => b.Tag.ToString() == "NitroDockMain_Configuration");
+
                 if (cfgButton != null)
                 {
                     PositionConfigButton(cfgButton);
                 }
+
                 return;
             }
+
             Button cfgButtonLocal = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .FirstOrDefault(b => b.Tag.ToString() == "NitroDockMain_Configuration");
+
             int startY = IconSpacing;
             int startX = IconSpacing;
+
             if (cfgButtonLocal != null)
             {
                 PositionConfigButton(cfgButtonLocal);
                 startY = cfgButtonLocal.Bottom + IconSpacing;
                 startX = cfgButtonLocal.Right + IconSpacing;
             }
+
             switch (currentDockPosition)
             {
                 case DockPosition.Left:
@@ -662,6 +907,7 @@ namespace NitroDock
                         int dockHeight = startY + totalButtonsHeight + IconSpacing;
                         ClientSize = new Size(ClientSize.Width, dockHeight);
                         int centerX = ClientSize.Width / 2;
+
                         for (int i = 0; i < buttons.Count; i++)
                         {
                             buttons[i].Location = new Point(
@@ -669,6 +915,7 @@ namespace NitroDock
                                 startY + i * (IconSize + IconSpacing)
                             );
                         }
+
                         break;
                     }
                 case DockPosition.Top:
@@ -678,6 +925,7 @@ namespace NitroDock
                         int dockWidth = startX + totalButtonsWidth + IconSpacing;
                         ClientSize = new Size(dockWidth, ClientSize.Height);
                         int centerY = ClientSize.Height / 2;
+
                         for (int i = 0; i < buttons.Count; i++)
                         {
                             buttons[i].Location = new Point(
@@ -685,9 +933,11 @@ namespace NitroDock
                                 centerY - (IconSize / 2)
                             );
                         }
+
                         break;
                     }
             }
+
             UpdateRoundedRegion();
         }
 
@@ -696,9 +946,11 @@ namespace NitroDock
             Screen screen = Screen.FromControl(this);
             Rectangle workingArea = screen.WorkingArea;
             int dockWidth, dockHeight;
+
             var buttons = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .Where(b => b.Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
+
             if (position == DockPosition.Left || position == DockPosition.Right)
             {
                 dockWidth = minDockWidth;
@@ -711,6 +963,7 @@ namespace NitroDock
                 int totalButtonsWidth = buttons.Count * IconSize + (buttons.Count > 0 ? (buttons.Count - 1) * IconSpacing : 0);
                 dockWidth = totalButtonsWidth + 2 * IconSpacing + IconSize;
             }
+
             switch (position)
             {
                 case DockPosition.Left:
@@ -732,13 +985,17 @@ namespace NitroDock
                     );
                     break;
             }
+
             ClientSize = new Size(dockWidth, dockHeight);
+
             Button cfgButton = NitroDockMain_OpacityPanel.Controls.OfType<Button>()
                 .FirstOrDefault(b => b.Tag.ToString() == "NitroDockMain_Configuration");
+
             if (cfgButton != null)
             {
                 PositionConfigButton(cfgButton);
             }
+
             RedistributeButtons();
             UpdateRoundedRegion();
         }
@@ -759,6 +1016,7 @@ namespace NitroDock
         public void UpdateAllIconSizes(int newSize)
         {
             IconSize = Math.Min(newSize, maxIconSize);
+
             foreach (Button button in NitroDockMain_OpacityPanel.Controls.OfType<Button>())
             {
                 string path = button.Tag?.ToString();
@@ -768,15 +1026,26 @@ namespace NitroDock
                     {
                         if (button.Tag.ToString() != "NitroDockMain_Configuration")
                         {
-                            Icon icon = GetIconForPath(path);
-                            if (icon != null)
+                            if (button.Image?.Tag is string customIconPath && File.Exists(customIconPath))
                             {
-                                Bitmap bitmap = icon.ToBitmap();
-                                button.Image = ResizeImage(bitmap, IconSize, IconSize);
+                                using (Image customImage = Image.FromFile(customIconPath))
+                                {
+                                    button.Image = ResizeImage(customImage, IconSize, IconSize);
+                                    button.Image.Tag = customIconPath;
+                                }
                             }
                             else
                             {
-                                button.Image = ResizeImage(GetDefaultIcon().ToBitmap(), IconSize, IconSize);
+                                Icon icon = GetIconForPath(path);
+                                if (icon != null)
+                                {
+                                    Bitmap bitmap = icon.ToBitmap();
+                                    button.Image = ResizeImage(bitmap, IconSize, IconSize);
+                                }
+                                else
+                                {
+                                    button.Image = ResizeImage(GetDefaultIcon().ToBitmap(), IconSize, IconSize);
+                                }
                             }
                         }
                         else
@@ -794,6 +1063,7 @@ namespace NitroDock
                                 button.Image = ResizeImage(SystemIcons.Shield.ToBitmap(), IconSize, IconSize);
                             }
                         }
+
                         button.Size = new Size(IconSize, IconSize);
                     }
                     catch (Exception ex)
@@ -803,13 +1073,50 @@ namespace NitroDock
                     }
                 }
             }
+
             SnapToEdge(currentDockPosition);
+            ApplyGlowEffect();
         }
 
         public void UpdateAllIconSpacings(int newSpacing)
         {
             IconSpacing = Math.Min(newSpacing, maxIconSpacing);
             RedistributeButtons();
+        }
+
+        public void ApplyGlowEffect()
+        {
+            foreach (Button button in NitroDockMain_OpacityPanel.Controls.OfType<Button>())
+            {
+                button.FlatAppearance.BorderSize = 0;
+                button.BackColor = Color.Transparent;
+
+                button.MouseEnter += (sender, e) =>
+                {
+                    Color glowColor = GetGlowColor(SelectedGlowColor);
+                    button.BackColor = Color.FromArgb(50, glowColor);
+                };
+
+                button.MouseLeave += (sender, e) =>
+                {
+                    button.BackColor = Color.Transparent;
+                };
+            }
+        }
+
+        private Color GetGlowColor(GlowColor glowColor)
+        {
+            return glowColor switch
+            {
+                GlowColor.Blue => Color.Blue,
+                GlowColor.Cyan => Color.Cyan,
+                GlowColor.Pink => Color.HotPink,
+                GlowColor.Red => Color.Red,
+                GlowColor.SlateGray => Color.SlateGray,
+                GlowColor.White => Color.WhiteSmoke,
+                GlowColor.Yellow => Color.LightYellow,
+                _ => Color.Blue,
+            };
         }
     }
 }
