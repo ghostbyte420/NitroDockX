@@ -10,6 +10,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="AI.CodeAssist\**" />
+    <EmbeddedResource Remove="AI.CodeAssist\**" />
+    <None Remove="AI.CodeAssist\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Resources\Logo\logo_001.ico" />
   </ItemGroup>
 

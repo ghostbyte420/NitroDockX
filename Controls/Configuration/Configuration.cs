@@ -45,7 +45,9 @@ namespace NitroDock
             int maxZOffset = _mainForm.currentDockPosition == DockPosition.Left || _mainForm.currentDockPosition == DockPosition.Right
                 ? workingArea.Height - _mainForm.ClientSize.Height
                 : workingArea.Width - _mainForm.ClientSize.Width;
+
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Maximum = maxZOffset;
+
             int loadedDockOffsetZ = _mainForm.DockOffsetZ;
             loadedDockOffsetZ = Math.Max(
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Minimum,
@@ -78,6 +80,18 @@ namespace NitroDock
 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Items.AddRange(Enum.GetNames(typeof(GlowColor)));
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem = _mainForm.SelectedGlowColor.ToString();
+
+            // Initialize ComboBox for Dock Corners
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Items.Clear();
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Items.AddRange(new object[] { "Round Dock Corners", "Square Dock Corners" });
+
+            // Set SelectedIndexChanged event
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedIndexChanged += (s, e) =>
+            {
+                string cornerStyle = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem.ToString();
+                _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
+                _mainForm.UpdateRoundedRegion();
+            };
 
             string skinsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroSkins");
             if (Directory.Exists(skinsPath))
@@ -130,6 +144,19 @@ namespace NitroDock
             if (Enum.TryParse(ini.Read("DockSettings", "GlowColor"), out GlowColor glowColor))
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem = glowColor.ToString();
 
+            // Load Dock Corner Style
+            string cornerStyle = ini.Read("DockSettings", "DockCornerStyle", "Round Dock Corners");
+            if (NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Items.Contains(cornerStyle))
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem = cornerStyle;
+            }
+            else
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem = "Round Dock Corners";
+            }
+            _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
+            _mainForm.UpdateRoundedRegion();
+
             string savedSkin = ini.Read("DockSettings", "Skin", "Default");
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.SelectedItem = savedSkin;
 
@@ -153,6 +180,7 @@ namespace NitroDock
                 int maxZOffset = position == DockPosition.Left || position == DockPosition.Right
                     ? workingArea.Height - _mainForm.ClientSize.Height
                     : workingArea.Width - _mainForm.ClientSize.Width;
+
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Maximum = maxZOffset;
                 _mainForm.SnapToEdge(position);
             }
@@ -204,6 +232,10 @@ namespace NitroDock
             string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
             IniFile ini = new IniFile(iniPath);
 
+            // Store old values for comparison
+            int oldIconSize = _mainForm.IconSize;
+            int oldIconSpacing = _mainForm.IconSpacing;
+
             if (Enum.TryParse(
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.SelectedItem.ToString(),
                 out DockPosition position
@@ -244,6 +276,12 @@ namespace NitroDock
                 ini.Write("DockSettings", "GlowColor", selectedGlowColor.ToString());
             }
 
+            // Save Dock Corner Style
+            string cornerStyle = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem.ToString();
+            _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
+            ini.Write("DockSettings", "DockCornerStyle", cornerStyle);
+            _mainForm.UpdateRoundedRegion();
+
             string selectedSkin = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.SelectedItem?.ToString() ?? "Default";
             ini.Write("DockSettings", "Skin", selectedSkin);
 
@@ -254,6 +292,7 @@ namespace NitroDock
             ini.Write("DockSettings", "LaunchOnRestart", launchOnRestart.ToString());
             SetStartup(launchOnRestart);
 
+            // Clear existing icon entries
             int index = 0;
             while (true)
             {
@@ -261,35 +300,59 @@ namespace NitroDock
                 if (string.IsNullOrEmpty(path)) break;
                 ini.Write("Icons", $"Icon{index}_Path", "");
                 ini.Write("Icons", $"Icon{index}_CustomIcon", "");
+                ini.Write("Icons", $"Icon{index}_ContainerBackgroundColor", "");
+                ini.Write("Icons", $"Icon{index}_ContainerBackgroundTexture", "");
                 index++;
             }
 
+            // Save current icons and containers
             index = 0;
-            foreach (Button button in _mainForm.NitroDockMain_OpacityPanel.Controls.OfType<Button>()
-                .Where(b => b.Tag?.ToString() != "NitroDockMain_Configuration"))
+            foreach (IconContainer container in _mainForm.NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>())
             {
-                string iconKey = $"Icon{index}";
-                ini.Write("Icons", $"{iconKey}_Path", button.Tag.ToString());
-                if (button.Image?.Tag != null)
+                if ((container.Controls[0] as Button).Tag.ToString() == "NitroDockMain_Configuration")
                 {
-                    string customIconPath = button.Image.Tag.ToString();
-                    if (!string.IsNullOrEmpty(customIconPath) && File.Exists(customIconPath))
-                    {
-                        ini.Write("Icons", $"{iconKey}_CustomIcon", customIconPath);
-                    }
+                    // Save the Configuration button container's background color separately
+                    ini.Write("Icons", "ConfigContainer_ContainerBackgroundColor", container.BackColor.ToArgb().ToString());
                 }
-                index++;
+                else
+                {
+                    string iconKey = $"Icon{index}";
+                    ini.Write("Icons", $"{iconKey}_Path", (container.Controls[0] as Button).Tag.ToString());
+
+                    if ((container.Controls[0] as Button).Image?.Tag != null)
+                    {
+                        string customIconPath = (container.Controls[0] as Button).Image.Tag.ToString();
+                        if (!string.IsNullOrEmpty(customIconPath) && File.Exists(customIconPath))
+                        {
+                            ini.Write("Icons", $"{iconKey}_CustomIcon", customIconPath);
+                        }
+                    }
+
+                    // Save container background color
+                    ini.Write("Icons", $"{iconKey}_ContainerBackgroundColor", container.BackColor.ToArgb().ToString());
+
+                    // Save container background texture
+                    if (container.BackgroundImage?.Tag is string texturePath)
+                        ini.Write("Icons", $"{iconKey}_ContainerBackgroundTexture", texturePath);
+
+                    index++;
+                }
             }
 
             _mainForm.ApplySkin(selectedSkin, selectedSkinMode);
             SystemSounds.Beep.Play();
             MessageBox.Show("Settings saved to NitroDockX.ini!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            // Only redistribute if spacing or size changed
+            if (oldIconSpacing != _mainForm.IconSpacing || oldIconSize != _mainForm.IconSize)
+                _mainForm.RedistributeContainers();
         }
 
         private void SetStartup(bool enabled)
         {
             string appPath = Application.ExecutablePath;
             RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+
             if (enabled)
             {
                 rk.SetValue("NitroDockX", appPath);

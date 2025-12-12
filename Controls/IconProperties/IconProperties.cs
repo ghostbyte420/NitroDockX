@@ -11,6 +11,7 @@ namespace NitroDock
         private Button targetButton;
         private string nitroIconsPath;
         private string originalPath;
+        private PictureBox selectedIconPictureBox;
 
         public NitroDockMain_IconProperties(Button button)
         {
@@ -18,14 +19,30 @@ namespace NitroDock
             targetButton = button;
             nitroIconsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroIcons");
             originalPath = targetButton.Tag?.ToString() ?? string.Empty;
-
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory.Text = nitroIconsPath;
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon.Text =
                 Path.GetFileName(targetButton.Tag?.ToString() ?? "None");
 
+            // Initialize the PictureBox for the selected icon preview
+            selectedIconPictureBox = new PictureBox
+            {
+                Size = new Size(128, 128),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Controls.Add(selectedIconPictureBox);
+            CenterPictureBox();
+
+            // Populate the icons preview panel
             PopulateIconPreview();
+
+            // Open the NitroIcons directory
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory.Click +=
                 (s, e) => System.Diagnostics.Process.Start("explorer.exe", nitroIconsPath);
+
+            // Handle panel resize to keep the PictureBox centered
+            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Resize +=
+                (s, e) => CenterPictureBox();
 
             if (targetButton.Tag?.ToString() == "NitroDockMain_Configuration")
             {
@@ -33,6 +50,19 @@ namespace NitroDock
             }
         }
 
+        // Centers the PictureBox in the panel
+        private void CenterPictureBox()
+        {
+            if (selectedIconPictureBox != null && NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay != null)
+            {
+                selectedIconPictureBox.Location = new Point(
+                    (NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Width - selectedIconPictureBox.Width) / 2,
+                    (NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Height - selectedIconPictureBox.Height) / 2
+                );
+            }
+        }
+
+        // Hides the "Remove Item" option for the config button
         public void HideRemoveOption()
         {
             if (targetButton?.ContextMenuStrip != null)
@@ -49,6 +79,7 @@ namespace NitroDock
             }
         }
 
+        // Populates the icons preview panel with thumbnails
         private void PopulateIconPreview()
         {
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Controls.Clear();
@@ -71,7 +102,11 @@ namespace NitroDock
                         Location = new Point(x, y)
                     };
 
+                    // When you double-click an icon, apply it to the button
                     pic.DoubleClick += (s, e) => SelectIcon(iconFile);
+
+                    // When you click an icon, show it in the preview panel
+                    pic.Click += (s, e) => ShowSelectedIcon(iconFile);
 
                     try
                     {
@@ -91,6 +126,7 @@ namespace NitroDock
                     }
 
                     NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Controls.Add(pic);
+
                     x += 74;
                     if (x + 74 > maxWidth)
                     {
@@ -101,13 +137,40 @@ namespace NitroDock
             }
         }
 
+        // Shows the selected icon in the preview panel and updates the textbox
+        private void ShowSelectedIcon(string iconPath)
+        {
+            try
+            {
+                // Show the icon in the preview panel
+                if (iconPath.EndsWith(".ico"))
+                    selectedIconPictureBox.Image = Icon.ExtractAssociatedIcon(iconPath).ToBitmap();
+                else
+                    selectedIconPictureBox.Image = Image.FromFile(iconPath);
+
+                // Show the icon name in the textbox
+                NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon.Text = Path.GetFileName(iconPath);
+
+                // Ensure the PictureBox remains centered after updating the image
+                CenterPictureBox();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading icon: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Applies the selected icon to the button on the main dock
         private void SelectIcon(string iconPath)
         {
             try
             {
-                NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon.Text = Path.GetFileName(iconPath);
+                // Update the button's image with the selected icon
                 targetButton.Image = ResizeImage(Image.FromFile(iconPath), targetButton.Width, targetButton.Height);
                 targetButton.Image.Tag = iconPath;
+                // Notify main form to save
+                (this.Owner as NitroDockMain)?.SaveIconToIni(targetButton.Parent as IconContainer);
+                // Close the form
                 this.Close();
             }
             catch (Exception ex)
@@ -116,6 +179,7 @@ namespace NitroDock
             }
         }
 
+        // Resizes the image to fit the button
         private Bitmap ResizeImage(Image image, int width, int height)
         {
             Rectangle destRect = new Rectangle(0, 0, width, height);

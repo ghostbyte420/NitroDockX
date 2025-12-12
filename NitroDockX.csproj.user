@@ -7,7 +7,13 @@
     <Compile Update="Controls\Configuration\Configuration.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Controls\IconContainerTextures\IconContainerTextures.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Controls\IconProperties\IconProperties.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Controls\StyleProperties\StyleProperties.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Main.cs">
