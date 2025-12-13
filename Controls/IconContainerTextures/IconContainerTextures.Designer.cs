@@ -70,7 +70,7 @@
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.Dock = DockStyle.Bottom;
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.Location = new Point(0, 253);
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.Name = "NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay";
-            NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.Opacity = 0.5F;
+            NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.Opacity = 0.8F;
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.Size = new Size(339, 221);
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_SelectedTextureDisplay.TabIndex = 1;
             // 
@@ -81,7 +81,7 @@
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.Dock = DockStyle.Top;
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.Location = new Point(0, 0);
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.Name = "NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview";
-            NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.Opacity = 1F;
+            NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.Opacity = 0.8F;
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.Size = new Size(339, 247);
             NitroDockMain_SplitContainer_Panel1_TextureProperties_OpacityPanel_TexturePreview.TabIndex = 0;
             // 
@@ -108,7 +108,7 @@
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.Dock = DockStyle.Top;
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.Location = new Point(0, 0);
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.Name = "NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information";
-            NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.Opacity = 1F;
+            NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.Opacity = 0.8F;
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.Size = new Size(333, 247);
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Information.TabIndex = 0;
             // 
@@ -125,7 +125,8 @@
             // labelSourceDirectory
             // 
             labelSourceDirectory.AutoSize = true;
-            labelSourceDirectory.Location = new Point(45, 70);
+            labelSourceDirectory.ForeColor = Color.LightSlateGray;
+            labelSourceDirectory.Location = new Point(45, 74);
             labelSourceDirectory.Name = "labelSourceDirectory";
             labelSourceDirectory.Size = new Size(97, 15);
             labelSourceDirectory.TabIndex = 4;
@@ -134,7 +135,8 @@
             // labelSelectedTexture
             // 
             labelSelectedTexture.AutoSize = true;
-            labelSelectedTexture.Location = new Point(45, 20);
+            labelSelectedTexture.ForeColor = Color.LightSlateGray;
+            labelSelectedTexture.Location = new Point(45, 26);
             labelSelectedTexture.Name = "labelSelectedTexture";
             labelSelectedTexture.Size = new Size(95, 15);
             labelSelectedTexture.TabIndex = 3;
@@ -161,7 +163,8 @@
             ClientSize = new Size(676, 474);
             Controls.Add(NitroDockMain_SplitContainer);
             Name = "NitroDockMain_IconContainerTextures";
-            Text = "Icon Container Textures";
+            Opacity = 0.85D;
+            Text = "NitroDockX: Icon Container Textures";
             NitroDockMain_SplitContainer.Panel1.ResumeLayout(false);
             NitroDockMain_SplitContainer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)NitroDockMain_SplitContainer).EndInit();

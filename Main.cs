@@ -2,7 +2,6 @@ using NitroDockX;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.DirectoryServices;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -17,12 +16,12 @@ namespace NitroDock
 {
     public partial class NitroDockMain : Form
     {
+        #region Fields
         private bool isDragging = false;
         private Point lastCursor;
         private Point lastForm;
         private const int minDockWidth = 64 + 10;
         private const int cornerRadius = 24;
-        private const int maxIconSize = 70;
         private const int maxIconSpacing = 50;
         private const int containerSize = 64;
         private const int dockWidth = 74;
@@ -30,6 +29,22 @@ namespace NitroDock
         private Button selectedButton = null;
         private bool isIconSelected = false;
         private MouseHook mouseHook;
+        private string logPath;
+        private string appPath;
+        private IntPtr _originalWndProc;
+        private bool _subclassed;
+        private int _assignedMonitorIndex = 0;
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public int AssignedMonitorIndex
+        {
+            get { return _assignedMonitorIndex; }
+            set
+            {
+                _assignedMonitorIndex = Math.Clamp(value, 0, Screen.AllScreens.Length - 1);
+                EnsureFormOnScreen();
+            }
+        }
 
         [DefaultValue(45)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
@@ -77,6 +92,12 @@ namespace NitroDock
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         private static extern uint GetLongPathName(string lpszShortPath, StringBuilder lpszLongPath, uint cchBuffer);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetWindowLong(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         private struct SHFILEINFO
         {
@@ -93,6 +114,17 @@ namespace NitroDock
         private const uint SHGFI_LARGEICON = 0x00000000;
         private const uint SHGFI_USEFILEATTRIBUTES = 0x000000010;
 
+        private const int GWL_WNDPROC = -4;
+        private const int WM_WINDOWPOSCHANGING = 0x0046;
+        private const int WM_MOVE = 0x0003;
+        private const int WM_SIZE = 0x0005;
+        private const int WM_ACTIVATE = 0x0006;
+        private const int WM_SHOWWINDOW = 0x0018;
+        private const int WM_WINDOWPOSCHANGED = 0x0047;
+
+        private static readonly object _logLock = new object();
+        #endregion
+
         public NitroDockMain()
         {
             InitializeComponent();
@@ -102,6 +134,25 @@ namespace NitroDock
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
             this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             this.SetStyle(ControlStyles.UserPaint, true);
+
+            // Initialize paths and logging
+            appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            logPath = Path.Combine(appPath, "NitroDockX_Debug.log");
+            Log("=== STARTUP ===");
+            Log($"Working Directory: {Environment.CurrentDirectory}");
+            Log($"Executable Path: {Assembly.GetExecutingAssembly().Location}");
+
+            string skinsPath = Path.Combine(appPath, "NitroSkins");
+            string iconsPath = Path.Combine(appPath, "NitroIcons");
+            string iniPath = Path.Combine(appPath, "NitroDockX.ini");
+
+            Log($"Skins Path: {skinsPath}");
+            Log($"Icons Path: {iconsPath}");
+            Log($"INI Path: {iniPath}");
+            Log($"Skins Exists: {Directory.Exists(skinsPath)}");
+            Log($"Icons Exists: {Directory.Exists(iconsPath)}");
+            Log($"INI Exists: {File.Exists(iniPath)}");
+
             mouseHook = MouseHook.Instance;
             mouseHook.MouseMiddleButtonDown += OnMouseMiddleButtonDown;
             mouseHook.MouseWheel += OnMouseWheel;
@@ -120,7 +171,7 @@ namespace NitroDock
             {
                 if (isDragging)
                 {
-                    Location = new Point(
+                    this.Location = new Point(
                         lastForm.X + (Cursor.Position.X - lastCursor.X),
                         lastForm.Y + (Cursor.Position.Y - lastForm.Y)
                     );
@@ -151,6 +202,145 @@ namespace NitroDock
             LoadSettings();
             SnapToEdge(currentDockPosition);
             ApplyGlowEffect();
+
+            // Log form events
+            this.VisibleChanged += (s, e) => Log($"VisibleChanged: {this.Visible}");
+            this.LocationChanged += (s, e) => Log($"LocationChanged: {this.Location}");
+            this.Deactivate += (s, e) => Log("Form Deactivated");
+            this.Activated += (s, e) => Log("Form Activated");
+
+            SubclassWindow();
+        }
+
+        private void SubclassWindow()
+        {
+            if (!_subclassed)
+            {
+                _originalWndProc = SetWindowLong(this.Handle, GWL_WNDPROC, Marshal.GetFunctionPointerForDelegate((WndProc)WindowProc));
+                _subclassed = true;
+            }
+        }
+
+        private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
+        {
+            Screen assignedScreen = Screen.AllScreens[_assignedMonitorIndex];
+            Rectangle workingArea = assignedScreen.WorkingArea;
+
+            switch (msg)
+            {
+                case WM_WINDOWPOSCHANGING:
+                    {
+                        WINDOWPOS pos = (WINDOWPOS)Marshal.PtrToStructure(lParam, typeof(WINDOWPOS));
+                        pos.x = Math.Clamp(pos.x, workingArea.Left, workingArea.Right - this.Width);
+                        pos.y = Math.Clamp(pos.y, workingArea.Top, workingArea.Bottom - this.Height);
+                        Marshal.StructureToPtr(pos, lParam, true);
+                        Log($"WM_WINDOWPOSCHANGING: Location={pos.x}, {pos.y}");
+                        break;
+                    }
+                case WM_MOVE:
+                    {
+                        int x = (short)(lParam.ToInt32() & 0xFFFF);
+                        int y = (short)((lParam.ToInt32() >> 16) & 0xFFFF);
+                        x = Math.Clamp(x, workingArea.Left, workingArea.Right - this.Width);
+                        y = Math.Clamp(y, workingArea.Top, workingArea.Bottom - this.Height);
+                        this.Location = new Point(x, y);
+                        Log($"WM_MOVE: Location={x}, {y}");
+                        break;
+                    }
+                case WM_SIZE:
+                case WM_ACTIVATE:
+                case WM_SHOWWINDOW:
+                case WM_WINDOWPOSCHANGED:
+                    {
+                        EnsureFormOnScreen();
+                        break;
+                    }
+            }
+
+            return CallWindowProc(_originalWndProc, hWnd, msg, wParam, lParam);
+        }
+
+        private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WINDOWPOS
+        {
+            public IntPtr hwnd;
+            public IntPtr hwndInsertAfter;
+            public int x;
+            public int y;
+            public int cx;
+            public int cy;
+            public uint flags;
+        }
+
+        private void Log(string message)
+        {
+            lock (_logLock)
+            {
+                try
+                {
+                    File.AppendAllText(logPath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}\n");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to log: {ex.Message}");
+                }
+            }
+        }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                Screen assignedScreen = Screen.AllScreens[_assignedMonitorIndex];
+                Rectangle workingArea = assignedScreen.WorkingArea;
+                cp.X = Math.Clamp(cp.X, workingArea.Left, workingArea.Right - this.Width);
+                cp.Y = Math.Clamp(cp.Y, workingArea.Top, workingArea.Bottom - this.Height);
+                return cp;
+            }
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            UpdateRoundedRegion();
+            EnsureFormOnScreen();
+
+            Screen assignedScreen = Screen.AllScreens[_assignedMonitorIndex];
+            Rectangle workingArea = assignedScreen.WorkingArea;
+            this.Location = new Point(
+                Math.Clamp(this.Location.X, workingArea.Left, workingArea.Right - this.Width),
+                Math.Clamp(this.Location.Y, workingArea.Top, workingArea.Bottom - this.Height)
+            );
+        }
+
+        protected override void OnLocationChanged(EventArgs e)
+        {
+            base.OnLocationChanged(e);
+            EnsureFormOnScreen();
+        }
+
+        protected override void OnMove(EventArgs e)
+        {
+            base.OnMove(e);
+            EnsureFormOnScreen();
+        }
+
+        public void EnsureFormOnScreen()
+        {
+            Screen assignedScreen = Screen.AllScreens[_assignedMonitorIndex];
+            Rectangle workingArea = assignedScreen.WorkingArea;
+
+            int newX = Math.Clamp(this.Location.X, workingArea.Left, workingArea.Right - this.Width);
+            int newY = Math.Clamp(this.Location.Y, workingArea.Top, workingArea.Bottom - this.Height);
+
+            if (this.Location.X != newX || this.Location.Y != newY)
+            {
+                this.Location = new Point(newX, newY);
+                Log($"[EnsureFormOnScreen] Dock position clamped to: {this.Location}");
+            }
         }
 
         private int GetIconIndex(IconContainer container)
@@ -168,7 +358,7 @@ namespace NitroDock
 
         public void SaveIconToIni(IconContainer container)
         {
-            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            string iniPath = Path.Combine(appPath, "NitroDockX.ini");
             IniFile ini = new IniFile(iniPath);
             var button = container.Controls[0] as Button;
             string path = button.Tag?.ToString() ?? string.Empty;
@@ -187,7 +377,7 @@ namespace NitroDock
 
         private void SaveDockLocation()
         {
-            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            string iniPath = Path.Combine(appPath, "NitroDockX.ini");
             IniFile ini = new IniFile(iniPath);
             ini.Write("DockSettings", "DockLocationX", Location.X.ToString());
             ini.Write("DockSettings", "DockLocationY", Location.Y.ToString());
@@ -195,10 +385,43 @@ namespace NitroDock
 
         private void LoadSettings()
         {
-            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
-            if (!File.Exists(iniPath)) return;
+            string iniPath = Path.Combine(appPath, "NitroDockX.ini");
+            Log($"Loading settings from: {iniPath}");
 
             IniFile ini = new IniFile(iniPath);
+            int locationX = 100; // Default
+            int locationY = 100; // Default
+
+            // Load saved location if it exists
+            if (int.TryParse(ini.Read("DockSettings", "DockLocationX"), out int savedX) &&
+                int.TryParse(ini.Read("DockSettings", "DockLocationY"), out int savedY))
+            {
+                locationX = savedX;
+                locationY = savedY;
+                Log($"Loaded saved location: X={locationX}, Y={locationY}");
+            }
+            else
+            {
+                Log("No saved location found. Using default (100, 100).");
+            }
+
+            // Load monitor assignment
+            if (int.TryParse(ini.Read("DockSettings", "AssignedMonitor"), out int assignedMonitor))
+            {
+                AssignedMonitorIndex = assignedMonitor - 1;
+            }
+            else
+            {
+                AssignedMonitorIndex = 0;
+            }
+
+            // Force the dock to stay within the assigned monitor
+            Screen assignedScreen = Screen.AllScreens[_assignedMonitorIndex];
+            Rectangle workingArea = assignedScreen.WorkingArea;
+            locationX = Math.Clamp(locationX, workingArea.Left, workingArea.Right - 100);
+            locationY = Math.Clamp(locationY, workingArea.Top, workingArea.Bottom - 100);
+            this.Location = new Point(locationX, locationY);
+            Log($"Final dock location set to: {this.Location}");
 
             if (Enum.TryParse(ini.Read("DockSettings", "DockPosition"), out DockPosition position))
                 currentDockPosition = position;
@@ -212,14 +435,10 @@ namespace NitroDock
             if (int.TryParse(ini.Read("DockSettings", "DockOffsetZ"), out int offsetZ))
                 DockOffsetZ = offsetZ;
 
-            if (int.TryParse(ini.Read("DockSettings", "DockLocationX"), out int locationX) &&
-                int.TryParse(ini.Read("DockSettings", "DockLocationY"), out int locationY))
-            {
-                Location = new Point(locationX, locationY);
-            }
-
             if (int.TryParse(ini.Read("DockSettings", "IconSize"), out int iconSize))
-                IconSize = iconSize;
+                IconSize = Math.Clamp(iconSize, 16, 64);
+            else
+                IconSize = 48;
 
             if (int.TryParse(ini.Read("DockSettings", "IconSpacing"), out int iconSpacing))
                 IconSpacing = iconSpacing;
@@ -276,14 +495,21 @@ namespace NitroDock
                 string customIcon = ini.Read("Icons", $"Icon{index}_CustomIcon");
                 IconContainer container = CreateIconContainerForFileOrDirectory(path);
 
-                if (!string.IsNullOrEmpty(customIcon) && File.Exists(customIcon))
+                if (!string.IsNullOrEmpty(customIcon))
                 {
-                    try
+                    string fullCustomIconPath = Path.Combine(appPath, customIcon);
+                    if (File.Exists(fullCustomIconPath))
                     {
-                        (container.Controls[0] as Button).Image = ResizeImage(Image.FromFile(customIcon), IconSize, IconSize);
-                        (container.Controls[0] as Button).Image.Tag = customIcon;
+                        try
+                        {
+                            (container.Controls[0] as Button).Image = ResizeImage(Image.FromFile(fullCustomIconPath), IconSize, IconSize);
+                            (container.Controls[0] as Button).Image.Tag = customIcon;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Error loading custom icon: {ex}");
+                        }
                     }
-                    catch { }
                 }
 
                 if (int.TryParse(ini.Read("Icons", $"Icon{index}_ContainerBackgroundColor"), out int backgroundColorArgb))
@@ -295,17 +521,24 @@ namespace NitroDock
                     container.BackColor = Color.Transparent;
                 }
 
-                // Load texture
                 string texturePath = ini.Read("Icons", $"Icon{index}_ContainerBackgroundTexture");
-                if (!string.IsNullOrEmpty(texturePath) && File.Exists(texturePath))
+                if (!string.IsNullOrEmpty(texturePath))
                 {
-                    try
+                    string fullTexturePath = Path.Combine(appPath, texturePath);
+                    if (File.Exists(fullTexturePath))
                     {
-                        container.BackgroundImage = Image.FromFile(texturePath);
-                        container.BackgroundImage.Tag = texturePath;
-                        container.BackgroundImageLayout = ImageLayout.Stretch;
+                        try
+                        {
+                            container.BackgroundImage = Image.FromFile(fullTexturePath);
+                            container.BackgroundImage.Tag = texturePath;
+                            container.BackgroundImageLayout = ImageLayout.Stretch;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Error loading texture: {ex}");
+                            container.BackgroundImage = null;
+                        }
                     }
-                    catch { container.BackgroundImage = null; }
                 }
 
                 NitroDockMain_OpacityPanel.Controls.Add(container);
@@ -317,36 +550,55 @@ namespace NitroDock
 
         public void ApplySkin(string skinName, string skinMode)
         {
-            string skinPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroSkins", skinName, "01.png");
+            string skinPath = Path.Combine(appPath, "NitroSkins", skinName, "01.png");
+            Log($"Applying skin: {skinName} from {skinPath}");
 
             if (File.Exists(skinPath))
             {
-                Image skinImage = Image.FromFile(skinPath);
-                NitroDockMain_OpacityPanel.BackgroundImage = skinImage;
-
-                switch (skinMode)
+                try
                 {
-                    case "None":
-                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.None;
-                        break;
-                    case "Tile":
-                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Tile;
-                        break;
-                    case "Center":
-                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Center;
-                        break;
-                    case "Stretch":
-                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Stretch;
-                        break;
-                    case "Zoom":
-                        NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Zoom;
-                        break;
+                    Image skinImage = Image.FromFile(skinPath);
+                    NitroDockMain_OpacityPanel.BackgroundImage = skinImage;
+
+                    switch (skinMode)
+                    {
+                        case "None":
+                            NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.None;
+                            break;
+                        case "Tile":
+                            NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Tile;
+                            break;
+                        case "Center":
+                            NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Center;
+                            break;
+                        case "Stretch":
+                            NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Stretch;
+                            break;
+                        case "Zoom":
+                            NitroDockMain_OpacityPanel.BackgroundImageLayout = ImageLayout.Zoom;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"Error applying skin: {ex}");
+                    NitroDockMain_OpacityPanel.BackgroundImage = null;
                 }
             }
             else
             {
+                Log($"Skin file not found: {skinPath}");
                 NitroDockMain_OpacityPanel.BackgroundImage = null;
             }
+
+            // Force form to restore visibility and ensure it's on-screen
+            this.Visible = true;
+            this.WindowState = FormWindowState.Normal;
+            this.BringToFront();
+            this.Activate();
+            this.Focus();
+            EnsureFormOnScreen();
+            Log($"Form restored: Visible={this.Visible}, Location={this.Location}");
         }
 
         private void OnMouseMiddleButtonDown(MouseEventArgs e)
@@ -398,8 +650,7 @@ namespace NitroDock
 
         private string GetNitroIconsPath()
         {
-            string appDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string nitroIconsPath = Path.Combine(appDirectory, "NitroIcons");
+            string nitroIconsPath = Path.Combine(appPath, "NitroIcons");
 
             if (!Directory.Exists(nitroIconsPath))
             {
@@ -487,18 +738,6 @@ namespace NitroDock
             }
         }
 
-        protected override void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
-            UpdateRoundedRegion();
-        }
-
-        protected override void OnResize(EventArgs e)
-        {
-            base.OnResize(e);
-            UpdateRoundedRegion();
-        }
-
         protected override void OnPaintBackground(PaintEventArgs e)
         {
             base.OnPaintBackground(e);
@@ -550,6 +789,7 @@ namespace NitroDock
             }
             catch (Exception ex)
             {
+                Log($"Error updating dock region: {ex.Message}");
                 MessageBox.Show($"Error updating dock region: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -607,7 +847,7 @@ namespace NitroDock
 
         private void ClearIniFile()
         {
-            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            string iniPath = Path.Combine(appPath, "NitroDockX.ini");
             if (File.Exists(iniPath))
             {
                 File.WriteAllText(iniPath, string.Empty);
@@ -677,8 +917,9 @@ namespace NitroDock
                 shellLink.GetPath(targetPath, targetPath.Capacity, out _, 0);
                 return targetPath.ToString();
             }
-            catch
+            catch (Exception ex)
             {
+                Log($"Error resolving shortcut: {ex}");
                 return shortcutPath;
             }
         }
@@ -806,18 +1047,22 @@ namespace NitroDock
 
         public void UpdateAllIconSizes(int newSize)
         {
-            IconSize = Math.Min(newSize, containerSize);
+            IconSize = Math.Clamp(newSize, 16, 64);
             foreach (IconContainer container in NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>())
             {
                 container.UpdateIconSize(IconSize);
-                if (container.Controls[0] is Button button)
+                if (container.Controls[0] is Button button && button.Image != null)
                     button.Image = ResizeImage(button.Image, IconSize, IconSize);
             }
             // Explicitly update config button
             var configContainer = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
                 .FirstOrDefault(c => (c.Controls[0] as Button).Tag?.ToString() == "NitroDockMain_Configuration");
             if (configContainer != null)
+            {
                 configContainer.UpdateIconSize(IconSize);
+                if (configContainer.Controls[0] is Button configButton && configButton.Image != null)
+                    configButton.Image = ResizeImage(configButton.Image, IconSize, IconSize);
+            }
             SnapToEdge(currentDockPosition);
             ApplyGlowEffect();
         }
@@ -830,54 +1075,68 @@ namespace NitroDock
 
         public void SnapToEdge(DockPosition position)
         {
-            Screen screen = Screen.FromControl(this);
-            Rectangle workingArea = screen.WorkingArea;
-            int calculatedDockWidth, calculatedDockHeight;
+            Screen assignedScreen = Screen.AllScreens[_assignedMonitorIndex];
+            Rectangle workingArea = assignedScreen.WorkingArea;
+            const int minDockSize = 100;
 
             var containers = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
                 .Where(c => (c.Controls[0] as Button).Tag.ToString() != "NitroDockMain_Configuration")
                 .ToList();
 
+            int calculatedDockWidth, calculatedDockHeight;
+
             if (position == DockPosition.Left || position == DockPosition.Right)
             {
                 calculatedDockWidth = dockWidth;
                 int totalContainersHeight = containers.Count * containerSize + (containers.Count > 0 ? (containers.Count - 1) * IconSpacing : 0);
-                calculatedDockHeight = totalContainersHeight + 2 * IconSpacing;
+                calculatedDockHeight = Math.Max(totalContainersHeight + 2 * IconSpacing, minDockSize);
             }
             else
             {
                 calculatedDockHeight = dockHeight;
                 int totalContainersWidth = containers.Count * containerSize + (containers.Count > 0 ? (containers.Count - 1) * IconSpacing : 0);
-                calculatedDockWidth = totalContainersWidth + 2 * IconSpacing;
+                calculatedDockWidth = Math.Max(totalContainersWidth + 2 * IconSpacing, minDockSize);
             }
 
+            int maxZOffsetVertical = workingArea.Height - calculatedDockHeight;
+            int maxZOffsetHorizontal = workingArea.Width - calculatedDockWidth;
+
+            DockOffset = Math.Min(DockOffset, workingArea.Width / 2);
+            DockOffsetZ = Math.Min(DockOffsetZ, position == DockPosition.Left || position == DockPosition.Right ? maxZOffsetVertical : maxZOffsetHorizontal);
+
+            int newX, newY;
             switch (position)
             {
                 case DockPosition.Left:
+                    newX = workingArea.Left + DockOffset;
+                    newY = workingArea.Top + Math.Min(DockOffsetZ, maxZOffsetVertical);
+                    break;
                 case DockPosition.Right:
-                    int maxZOffsetVertical = workingArea.Height - calculatedDockHeight;
-                    DockOffsetZ = Math.Max(0, Math.Min(DockOffsetZ, maxZOffsetVertical));
-                    Location = new Point(
-                        position == DockPosition.Left ? workingArea.Left + DockOffset : workingArea.Right - calculatedDockWidth - DockOffset,
-                        workingArea.Top + DockOffsetZ
-                    );
+                    newX = workingArea.Right - calculatedDockWidth - DockOffset;
+                    newY = workingArea.Top + Math.Min(DockOffsetZ, maxZOffsetVertical);
                     break;
                 case DockPosition.Top:
+                    newX = workingArea.Left + Math.Min(DockOffsetZ, maxZOffsetHorizontal);
+                    newY = workingArea.Top + DockOffset;
+                    break;
                 case DockPosition.Bottom:
-                    int maxZOffsetHorizontal = workingArea.Width - calculatedDockWidth;
-                    DockOffsetZ = Math.Max(0, Math.Min(DockOffsetZ, maxZOffsetHorizontal));
-                    Location = new Point(
-                        workingArea.Left + DockOffsetZ,
-                        position == DockPosition.Top ? workingArea.Top + DockOffset : workingArea.Bottom - calculatedDockHeight - DockOffset
-                    );
+                    newX = workingArea.Left + Math.Min(DockOffsetZ, maxZOffsetHorizontal);
+                    newY = workingArea.Bottom - calculatedDockHeight - DockOffset;
+                    break;
+                default:
+                    newX = this.Location.X;
+                    newY = this.Location.Y;
                     break;
             }
 
+            newX = Math.Clamp(newX, workingArea.Left, workingArea.Right - calculatedDockWidth);
+            newY = Math.Clamp(newY, workingArea.Top, workingArea.Bottom - calculatedDockHeight);
+
+            this.Location = new Point(newX, newY);
             ClientSize = new Size(calculatedDockWidth, calculatedDockHeight);
 
-            IconContainer cfgContainer = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
+            var cfgContainer = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
                 .FirstOrDefault(c => (c.Controls[0] as Button).Tag.ToString() == "NitroDockMain_Configuration");
-
             if (cfgContainer != null)
             {
                 PositionConfigButton(cfgContainer);
@@ -894,8 +1153,7 @@ namespace NitroDock
                 MessageBox.Show("The Configuration button cannot be removed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            // Remove from INI
-            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            string iniPath = Path.Combine(appPath, "NitroDockX.ini");
             IniFile ini = new IniFile(iniPath);
             int index = GetIconIndex(container);
             if (index >= 0)
@@ -947,23 +1205,21 @@ namespace NitroDock
 
         private Bitmap ResizeImage(Image image, int width, int height)
         {
-            Rectangle destRect = new Rectangle(0, 0, width, height);
-            Bitmap destImage = new Bitmap(width, height);
+            if (image == null)
+                return null;
+
+            var destRect = new Rectangle(0, 0, width, height);
+            var destImage = new Bitmap(width, height);
             destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
 
-            using (Graphics graphics = Graphics.FromImage(destImage))
+            using (var graphics = Graphics.FromImage(destImage))
             {
                 graphics.CompositingMode = CompositingMode.SourceCopy;
                 graphics.CompositingQuality = CompositingQuality.HighQuality;
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (ImageAttributes wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-                }
+                graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel);
             }
 
             return destImage;

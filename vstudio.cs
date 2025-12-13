@@ -69,12 +69,10 @@ namespace NitroDock
 
         public IconContainer(string path, int iconSize)
         {
-            // Container properties
             this.Size = new Size(64, 64);
             this.BackColor = Color.Transparent;
             this.BorderStyle = BorderStyle.None;
 
-            // Initialize the icon button
             _iconButton = new Button
             {
                 Size = new Size(iconSize, iconSize),
@@ -85,18 +83,15 @@ namespace NitroDock
                 ImageAlign = ContentAlignment.MiddleCenter
             };
 
-            // Center the button within the container
             _iconButton.Location = new Point(
                 (this.Width - _iconButton.Width) / 2,
                 (this.Height - _iconButton.Height) / 2
             );
 
-            // Load the icon
             try
             {
                 if (path == "NitroDockMain_Configuration")
                 {
-                    // Special handling for Configuration button
                     string configIconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroIcons", "Config.png");
                     if (File.Exists(configIconPath))
                     {
@@ -129,13 +124,9 @@ namespace NitroDock
                 _iconButton.Image = ResizeImage(SystemIcons.Application.ToBitmap(), iconSize, iconSize);
             }
 
-            // Add the button to the container
             this.Controls.Add(_iconButton);
-
-            // Set up the container's context menu
             InitializeContainerContextMenu();
 
-            // Handle button click (launch file/folder)
             _iconButton.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -152,7 +143,6 @@ namespace NitroDock
                 }
             };
 
-            // Handle icon hover effect
             _iconButton.MouseEnter += (sender, e) =>
             {
                 Color glowColor = Color.Cyan;
@@ -168,7 +158,6 @@ namespace NitroDock
         {
             _containerContextMenu = new ContextMenuStrip();
 
-            // Add Background Texture menu item
             ToolStripMenuItem addBackgroundTextureItem = new ToolStripMenuItem("Add Background Texture");
             addBackgroundTextureItem.Click += (s, e) => AddBackgroundTexture();
             _containerContextMenu.Items.Add(addBackgroundTextureItem);
@@ -213,13 +202,11 @@ namespace NitroDock
                 (this.Height - _iconButton.Height) / 2
             );
 
-            // Resize the icon image
             string path = _iconButton.Tag.ToString();
             try
             {
                 if (path == "NitroDockMain_Configuration")
                 {
-                    // Special handling for Configuration button
                     string configIconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroIcons", "Config.png");
                     if (File.Exists(configIconPath))
                     {
@@ -354,6 +341,7 @@ namespace NitroDock
             Rectangle destRect = new Rectangle(0, 0, width, height);
             Bitmap destImage = new Bitmap(width, height);
             destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+
             using (Graphics graphics = Graphics.FromImage(destImage))
             {
                 graphics.CompositingMode = CompositingMode.SourceCopy;
@@ -361,12 +349,14 @@ namespace NitroDock
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
                 using (ImageAttributes wrapMode = new ImageAttributes())
                 {
                     wrapMode.SetWrapMode(WrapMode.TileFlipXY);
                     graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
                 }
             }
+
             return destImage;
         }
 

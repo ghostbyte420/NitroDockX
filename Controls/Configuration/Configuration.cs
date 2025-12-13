@@ -1,6 +1,9 @@
 ﻿using Microsoft.Win32;
+using NitroDockX;
 using System;
+using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Media;
 using System.Reflection;
 using System.Windows.Forms;
@@ -18,80 +21,14 @@ namespace NitroDock
             _mainForm = mainForm;
 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.Items.AddRange(Enum.GetNames(typeof(DockPosition)));
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.SelectedItem = _mainForm.currentDockPosition.ToString();
-
-            int loadedDockOpacity = (int)(_mainForm.Opacity * 100);
-            loadedDockOpacity = Math.Max(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Minimum,
-                Math.Min(
-                    NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Maximum,
-                    loadedDockOpacity
-                )
-            );
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Value = loadedDockOpacity;
-
-            int loadedDockOffset = _mainForm.DockOffset;
-            loadedDockOffset = Math.Max(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Minimum,
-                Math.Min(
-                    NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Maximum,
-                    loadedDockOffset
-                )
-            );
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Value = loadedDockOffset;
-
-            Screen screen = Screen.FromControl(_mainForm);
-            Rectangle workingArea = screen.WorkingArea;
-            int maxZOffset = _mainForm.currentDockPosition == DockPosition.Left || _mainForm.currentDockPosition == DockPosition.Right
-                ? workingArea.Height - _mainForm.ClientSize.Height
-                : workingArea.Width - _mainForm.ClientSize.Width;
-
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Maximum = maxZOffset;
-
-            int loadedDockOffsetZ = _mainForm.DockOffsetZ;
-            loadedDockOffsetZ = Math.Max(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Minimum,
-                Math.Min(
-                    NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Maximum,
-                    loadedDockOffsetZ
-                )
-            );
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Value = loadedDockOffsetZ;
-
-            int loadedIconSize = _mainForm.IconSize;
-            loadedIconSize = Math.Max(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Minimum,
-                Math.Min(
-                    NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Maximum,
-                    loadedIconSize
-                )
-            );
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Value = loadedIconSize;
-
-            int loadedIconSpacing = _mainForm.IconSpacing;
-            loadedIconSpacing = Math.Max(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Minimum,
-                Math.Min(
-                    NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Maximum,
-                    loadedIconSpacing
-                )
-            );
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Value = loadedIconSpacing;
-
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Items.AddRange(Enum.GetNames(typeof(GlowColor)));
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem = _mainForm.SelectedGlowColor.ToString();
-
-            // Initialize ComboBox for Dock Corners
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Items.Clear();
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Items.AddRange(new object[] { "Round Dock Corners", "Square Dock Corners" });
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_SkinDisplayMode.Items.AddRange(new object[] { "None", "Tile", "Center", "Stretch", "Zoom" });
 
-            // Set SelectedIndexChanged event
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedIndexChanged += (s, e) =>
-            {
-                string cornerStyle = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem.ToString();
-                _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
-                _mainForm.UpdateRoundedRegion();
-            };
+            // Set trackbar limits for icon resizing
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Minimum = 16;
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Maximum = 64;
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Value = 48;
 
             string skinsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroSkins");
             if (Directory.Exists(skinsPath))
@@ -103,9 +40,8 @@ namespace NitroDock
                 }
             }
 
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_SkinDisplayMode.Items.AddRange(
-                new object[] { "None", "Tile", "Center", "Stretch", "Zoom" }
-            );
+            // Populate monitor combobox
+            PopulateMonitorComboBox();
 
             LoadSettings();
 
@@ -116,6 +52,38 @@ namespace NitroDock
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.ValueChanged += (s, e) => ApplyIconSize();
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.ValueChanged += (s, e) => ApplyIconSpacing();
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedIndexChanged += (s, e) => ApplyGlowEffect();
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedIndexChanged += (s, e) =>
+            {
+                string cornerStyle = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem.ToString();
+                _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
+                _mainForm.UpdateRoundedRegion();
+            };
+        }
+
+        private void PopulateMonitorComboBox()
+        {
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.Items.Clear();
+            for (int i = 0; i < Screen.AllScreens.Length; i++)
+            {
+                string monitorName = $"Monitor {i + 1}" + (Screen.AllScreens[i].Primary ? " (Primary)" : "");
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.Items.Add(monitorName);
+            }
+        }
+
+        public void SetSelectedSkin(string skinName)
+        {
+            if (NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.Items.Contains(skinName))
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.SelectedItem = skinName;
+            }
+        }
+
+        public void SetSkinDisplayMode(string mode)
+        {
+            if (NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_SkinDisplayMode.Items.Contains(mode))
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_SkinDisplayMode.SelectedItem = mode;
+            }
         }
 
         private void LoadSettings()
@@ -130,52 +98,90 @@ namespace NitroDock
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Value = opacityValue;
 
             if (int.TryParse(ini.Read("DockSettings", "DockOffset"), out int dockOffset))
+            {
+                int minValue = NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Minimum;
+                int maxValue = NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Maximum;
+                dockOffset = Math.Max(minValue, Math.Min(maxValue, dockOffset));
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Value = dockOffset;
+            }
 
             if (int.TryParse(ini.Read("DockSettings", "DockOffsetZ"), out int dockOffsetZ))
+            {
+                int minValue = NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Minimum;
+                int maxValue = NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Maximum;
+                dockOffsetZ = Math.Max(minValue, Math.Min(maxValue, dockOffsetZ));
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Value = dockOffsetZ;
+            }
 
             if (int.TryParse(ini.Read("DockSettings", "IconSize"), out int iconSize))
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Value = iconSize;
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Value = Math.Clamp(iconSize, 16, 64);
+            else
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Value = 48;
 
             if (int.TryParse(ini.Read("DockSettings", "IconSpacing"), out int iconSpacing))
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Value = iconSpacing;
 
-            if (Enum.TryParse(ini.Read("DockSettings", "GlowColor"), out GlowColor glowColor))
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem = glowColor.ToString();
+            string glowColor = ini.Read("DockSettings", "GlowColor", "Cyan");
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem = glowColor;
 
-            // Load Dock Corner Style
             string cornerStyle = ini.Read("DockSettings", "DockCornerStyle", "Round Dock Corners");
-            if (NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Items.Contains(cornerStyle))
-            {
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem = cornerStyle;
-            }
-            else
-            {
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem = "Round Dock Corners";
-            }
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem = cornerStyle;
             _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
             _mainForm.UpdateRoundedRegion();
 
             string savedSkin = ini.Read("DockSettings", "Skin", "Default");
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.SelectedItem = savedSkin;
+            if (NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.Items.Contains(savedSkin))
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.SelectedItem = savedSkin;
+            }
+            else if (NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.Items.Count > 0)
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockSkin.SelectedIndex = 0;
+            }
 
             string savedSkinMode = ini.Read("DockSettings", "SkinMode", "Stretch");
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_SkinDisplayMode.SelectedItem = savedSkinMode;
 
+            var styleForm = Application.OpenForms.OfType<NitroDockMain_StyleProperties>().FirstOrDefault();
+            if (styleForm != null && !string.IsNullOrEmpty(savedSkin))
+            {
+                string skinPreviewPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroSkins", savedSkin, "01.png");
+                if (File.Exists(skinPreviewPath))
+                {
+                    styleForm.ShowSelectedSkin(savedSkin, skinPreviewPath);
+                }
+            }
+
             bool launchOnRestart = bool.TryParse(ini.Read("DockSettings", "LaunchOnRestart"), out bool result) && result;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.Checked = launchOnRestart;
+
+            // Load monitor assignment
+            if (int.TryParse(ini.Read("DockSettings", "AssignedMonitor"), out int assignedMonitor))
+            {
+                if (assignedMonitor >= 1 && assignedMonitor <= Screen.AllScreens.Length)
+                {
+                    NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.SelectedIndex = assignedMonitor - 1;
+                }
+                else
+                {
+                    NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.SelectedIndex = 0;
+                }
+            }
+            else
+            {
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.SelectedIndex = 0;
+            }
         }
 
         private void ApplySelectedPosition()
         {
             if (Enum.TryParse(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.SelectedItem.ToString(),
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.SelectedItem?.ToString(),
                 out DockPosition position
             ))
             {
                 _mainForm.currentDockPosition = position;
-                Screen screen = Screen.FromControl(_mainForm);
+                Screen screen = Screen.AllScreens[_mainForm.AssignedMonitorIndex];
                 Rectangle workingArea = screen.WorkingArea;
                 int maxZOffset = position == DockPosition.Left || position == DockPosition.Right
                     ? workingArea.Height - _mainForm.ClientSize.Height
@@ -183,6 +189,7 @@ namespace NitroDock
 
                 NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Maximum = maxZOffset;
                 _mainForm.SnapToEdge(position);
+                _mainForm.EnsureFormOnScreen();
             }
         }
 
@@ -197,6 +204,7 @@ namespace NitroDock
             int offset = NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Edge.Value;
             _mainForm.DockOffset = offset;
             _mainForm.SnapToEdge(_mainForm.currentDockPosition);
+            _mainForm.EnsureFormOnScreen();
         }
 
         private void ApplyDockOffsetZ()
@@ -204,6 +212,7 @@ namespace NitroDock
             int offsetZ = NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOffset_Alignment.Value;
             _mainForm.DockOffsetZ = offsetZ;
             _mainForm.SnapToEdge(_mainForm.currentDockPosition);
+            _mainForm.EnsureFormOnScreen();
         }
 
         private void ApplyIconSize()
@@ -220,9 +229,10 @@ namespace NitroDock
 
         private void ApplyGlowEffect()
         {
-            if (Enum.TryParse(NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem.ToString(), out GlowColor selectedGlowColor))
+            string selectedGlowColor = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem?.ToString();
+            if (!string.IsNullOrEmpty(selectedGlowColor) && Enum.TryParse(selectedGlowColor, out GlowColor glowColor))
             {
-                _mainForm.SelectedGlowColor = selectedGlowColor;
+                _mainForm.SelectedGlowColor = glowColor;
                 _mainForm.ApplyGlowEffect();
             }
         }
@@ -232,12 +242,11 @@ namespace NitroDock
             string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
             IniFile ini = new IniFile(iniPath);
 
-            // Store old values for comparison
             int oldIconSize = _mainForm.IconSize;
             int oldIconSpacing = _mainForm.IconSpacing;
 
             if (Enum.TryParse(
-                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.SelectedItem.ToString(),
+                NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockPositioning.SelectedItem?.ToString(),
                 out DockPosition position
             ))
             {
@@ -259,6 +268,11 @@ namespace NitroDock
             _mainForm.DockOffsetZ = dockOffsetZ;
             ini.Write("DockSettings", "DockOffsetZ", dockOffsetZ.ToString());
 
+            // Force the dock to snap to the edge and clamp to the working area
+            _mainForm.SnapToEdge(_mainForm.currentDockPosition);
+            _mainForm.EnsureFormOnScreen();
+
+            // Save the validated location
             ini.Write("DockSettings", "DockLocationX", _mainForm.Location.X.ToString());
             ini.Write("DockSettings", "DockLocationY", _mainForm.Location.Y.ToString());
 
@@ -270,14 +284,14 @@ namespace NitroDock
             _mainForm.UpdateAllIconSpacings(iconSpacing);
             ini.Write("DockSettings", "IconSpacing", iconSpacing.ToString());
 
-            if (Enum.TryParse(NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem.ToString(), out GlowColor selectedGlowColor))
+            string selectedGlowColor = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.SelectedItem?.ToString();
+            if (!string.IsNullOrEmpty(selectedGlowColor) && Enum.TryParse(selectedGlowColor, out GlowColor glowColor))
             {
-                _mainForm.SelectedGlowColor = selectedGlowColor;
-                ini.Write("DockSettings", "GlowColor", selectedGlowColor.ToString());
+                _mainForm.SelectedGlowColor = glowColor;
+                ini.Write("DockSettings", "GlowColor", glowColor.ToString());
             }
 
-            // Save Dock Corner Style
-            string cornerStyle = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem.ToString();
+            string cornerStyle = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.SelectedItem?.ToString() ?? "Round Dock Corners";
             _mainForm.CurrentCornerStyle = (cornerStyle == "Round Dock Corners") ? CornerStyle.Round : CornerStyle.Square;
             ini.Write("DockSettings", "DockCornerStyle", cornerStyle);
             _mainForm.UpdateRoundedRegion();
@@ -292,7 +306,12 @@ namespace NitroDock
             ini.Write("DockSettings", "LaunchOnRestart", launchOnRestart.ToString());
             SetStartup(launchOnRestart);
 
-            // Clear existing icon entries
+            // Save monitor assignment
+            int assignedMonitor = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.SelectedIndex + 1;
+            ini.Write("DockSettings", "AssignedMonitor", assignedMonitor.ToString());
+            _mainForm.AssignedMonitorIndex = NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_AssignMonitor.SelectedIndex;
+            _mainForm.EnsureFormOnScreen();
+
             int index = 0;
             while (true)
             {
@@ -305,13 +324,11 @@ namespace NitroDock
                 index++;
             }
 
-            // Save current icons and containers
             index = 0;
             foreach (IconContainer container in _mainForm.NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>())
             {
                 if ((container.Controls[0] as Button).Tag.ToString() == "NitroDockMain_Configuration")
                 {
-                    // Save the Configuration button container's background color separately
                     ini.Write("Icons", "ConfigContainer_ContainerBackgroundColor", container.BackColor.ToArgb().ToString());
                 }
                 else
@@ -328,10 +345,8 @@ namespace NitroDock
                         }
                     }
 
-                    // Save container background color
                     ini.Write("Icons", $"{iconKey}_ContainerBackgroundColor", container.BackColor.ToArgb().ToString());
 
-                    // Save container background texture
                     if (container.BackgroundImage?.Tag is string texturePath)
                         ini.Write("Icons", $"{iconKey}_ContainerBackgroundTexture", texturePath);
 
@@ -343,7 +358,6 @@ namespace NitroDock
             SystemSounds.Beep.Play();
             MessageBox.Show("Settings saved to NitroDockX.ini!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            // Only redistribute if spacing or size changed
             if (oldIconSpacing != _mainForm.IconSpacing || oldIconSize != _mainForm.IconSize)
                 _mainForm.RedistributeContainers();
         }

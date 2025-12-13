@@ -30,7 +30,9 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NitroDockMain_IconProperties));
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information = new OpacityPanel();
+            labelSourceDirectory = new Label();
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory = new Button();
+            labelSelectedTexture = new Label();
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory = new TextBox();
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon = new TextBox();
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview = new OpacityPanel();
@@ -47,15 +49,27 @@
             // NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information
             // 
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.BackColor = Color.Transparent;
+            NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Controls.Add(labelSourceDirectory);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Controls.Add(NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory);
+            NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Controls.Add(labelSelectedTexture);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Controls.Add(NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Controls.Add(NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Dock = DockStyle.Top;
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Location = new Point(0, 0);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Name = "NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information";
-            NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Opacity = 1F;
+            NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Opacity = 0.8F;
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.Size = new Size(333, 247);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.TabIndex = 0;
+            // 
+            // labelSourceDirectory
+            // 
+            labelSourceDirectory.AutoSize = true;
+            labelSourceDirectory.ForeColor = Color.LightSlateGray;
+            labelSourceDirectory.Location = new Point(45, 74);
+            labelSourceDirectory.Name = "labelSourceDirectory";
+            labelSourceDirectory.Size = new Size(97, 15);
+            labelSourceDirectory.TabIndex = 6;
+            labelSourceDirectory.Text = "Source Directory:";
             // 
             // NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory
             // 
@@ -65,6 +79,16 @@
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory.TabIndex = 3;
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory.Text = "Open NitroIcons";
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory.UseVisualStyleBackColor = true;
+            // 
+            // labelSelectedTexture
+            // 
+            labelSelectedTexture.AutoSize = true;
+            labelSelectedTexture.ForeColor = Color.LightSlateGray;
+            labelSelectedTexture.Location = new Point(45, 26);
+            labelSelectedTexture.Name = "labelSelectedTexture";
+            labelSelectedTexture.Size = new Size(80, 15);
+            labelSelectedTexture.TabIndex = 5;
+            labelSelectedTexture.Text = "Selected Icon:";
             // 
             // NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory
             // 
@@ -87,7 +111,7 @@
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Dock = DockStyle.Top;
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Location = new Point(0, 0);
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Name = "NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview";
-            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Opacity = 1F;
+            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Opacity = 0.8F;
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.Size = new Size(339, 247);
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_IconPreview.TabIndex = 3;
             // 
@@ -116,7 +140,7 @@
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Dock = DockStyle.Bottom;
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Location = new Point(0, 253);
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Name = "NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay";
-            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Opacity = 0.5F;
+            NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Opacity = 0.8F;
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.RightToLeft = RightToLeft.No;
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.Size = new Size(339, 221);
             NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay.TabIndex = 4;
@@ -144,9 +168,9 @@
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "NitroDockMain_IconProperties";
-            Opacity = 0.5D;
+            Opacity = 0.85D;
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Icon Properties";
+            Text = "NitroDockX: Icon Properties";
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.ResumeLayout(false);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.PerformLayout();
             NitroDockMain_SplitContainer.Panel1.ResumeLayout(false);
@@ -157,8 +181,6 @@
         }
 
         #endregion
-
-        private NitroDock.OpacityPanel NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information;
         private TextBox NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory;
         private TextBox NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SelectedIcon;
         private TableLayoutPanel NitroDockMain_Properties_OpacityPanel_TableLayoutPanel_IconPreview;
@@ -167,5 +189,8 @@
         private OpacityPanel NitroDockMain_SplitContainer_Panel1_IconProperties_OpacityPanel_SelectedIconDisplay;
         private Button NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_Button_OpenNitroIconsDirectory;
         private OpacityPanel NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Image;
+        private OpacityPanel NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information;
+        private Label labelSourceDirectory;
+        private Label labelSelectedTexture;
     }
 }

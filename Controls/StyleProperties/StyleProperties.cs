@@ -1,6 +1,8 @@
-﻿using System;
+﻿using NitroDock;
+using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -12,13 +14,22 @@ namespace NitroDockX
         private string _nitroSkinsPath;
         private PictureBox _selectedSkinPictureBox;
         private string _selectedSkinName = "Default";
+        private string logPath;
+        private string appPath;
 
         public NitroDockMain_StyleProperties(NitroDock.NitroDockMain mainForm)
         {
             InitializeComponent();
             _mainForm = mainForm;
-            _nitroSkinsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroSkins");
+            appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _nitroSkinsPath = Path.Combine(appPath, "NitroSkins");
             NitroDockMain_SplitContainer_Panel2_Properties_OpacityPanel_TextBox_SourceDirectory.Text = _nitroSkinsPath;
+
+            // Initialize logging
+            logPath = Path.Combine(appPath, "NitroDockX_StyleProperties.log");
+            File.AppendAllText(logPath, $"=== StyleProperties STARTUP ===\n");
+            File.AppendAllText(logPath, $"Skins Path: {_nitroSkinsPath}\n");
+            File.AppendAllText(logPath, $"Skins Exists: {Directory.Exists(_nitroSkinsPath)}\n");
 
             _selectedSkinPictureBox = new PictureBox
             {
@@ -80,14 +91,10 @@ namespace NitroDockX
                             pic.Image = Image.FromFile(previewImagePath);
                             pic.Click += (s, e) => ShowSelectedSkin(skinName, previewImagePath);
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            pic.Image = new Bitmap(128, 64, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                            using (Graphics g = Graphics.FromImage(pic.Image))
-                            {
-                                g.Clear(Color.LightGray);
-                                g.DrawString("Invalid", Font, Brushes.Red, new PointF(5, 5));
-                            }
+                            File.AppendAllText(logPath, $"Error loading skin preview: {ex}\n");
+                            pic.Image = CreateErrorPlaceholder();
                         }
 
                         NitroDockMain_SplitContainer_Panel1_StyleProperties_OpacityPanel_StylePreview.Controls.Add(pic);
@@ -103,7 +110,18 @@ namespace NitroDockX
             }
         }
 
-        private void ShowSelectedSkin(string skinName, string previewImagePath)
+        private Bitmap CreateErrorPlaceholder()
+        {
+            Bitmap placeholder = new Bitmap(128, 64);
+            using (Graphics g = Graphics.FromImage(placeholder))
+            {
+                g.Clear(Color.LightGray);
+                g.DrawString("Invalid", Font, Brushes.Red, new PointF(5, 5));
+            }
+            return placeholder;
+        }
+
+        public void ShowSelectedSkin(string skinName, string previewImagePath)
         {
             try
             {
@@ -114,11 +132,27 @@ namespace NitroDockX
 
                 if (_mainForm != null)
                 {
+                    // Apply skin visually
                     _mainForm.ApplySkin(skinName, "Stretch");
+
+                    // Save to INI
+                    string iniPath = Path.Combine(appPath, "NitroDockX.ini");
+                    IniFile ini = new IniFile(iniPath);
+                    ini.Write("DockSettings", "Skin", skinName);
+                    ini.Write("DockSettings", "SkinMode", "Stretch");
+
+                    // Sync with Configuration form if open
+                    var configForm = Application.OpenForms.OfType<NitroDockMain_Configuration>().FirstOrDefault();
+                    if (configForm != null)
+                    {
+                        configForm.SetSelectedSkin(skinName);
+                        configForm.SetSkinDisplayMode("Stretch");
+                    }
                 }
             }
             catch (Exception ex)
             {
+                File.AppendAllText(logPath, $"Error loading skin: {ex}\n");
                 MessageBox.Show($"Error loading skin: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
