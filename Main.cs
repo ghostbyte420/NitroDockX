@@ -362,16 +362,47 @@ namespace NitroDock
             IniFile ini = new IniFile(iniPath);
             var button = container.Controls[0] as Button;
             string path = button.Tag?.ToString() ?? string.Empty;
+
             int index = GetIconIndex(container);
             if (index >= 0)
             {
                 ini.Write("Icons", $"Icon{index}_Path", path);
                 if (button.Image?.Tag is string customIconPath)
+                {
                     ini.Write("Icons", $"Icon{index}_CustomIcon", customIconPath);
-                if (container.BackgroundImage != null && container.BackgroundImage.Tag is string texturePath)
+                }
+                // Save background color (including transparency)
+                ini.Write("Icons", $"Icon{index}_ContainerBackgroundColor", container.BackColor.ToArgb().ToString());
+                if (container.BackgroundImage?.Tag is string texturePath)
+                {
                     ini.Write("Icons", $"Icon{index}_ContainerBackgroundTexture", texturePath);
+                }
                 else
+                {
+                    // If no texture, save an empty string
                     ini.Write("Icons", $"Icon{index}_ContainerBackgroundTexture", "");
+                }
+            }
+            // Save config container
+            else if (button.Tag?.ToString() == "NitroDockMain_Configuration")
+            {
+                ini.Write("Icons", "ConfigContainer_ContainerBackgroundColor", container.BackColor.ToArgb().ToString());
+                if (container.BackgroundImage?.Tag is string configTexturePath)
+                {
+                    ini.Write("Icons", "ConfigContainer_ContainerBackgroundTexture", configTexturePath);
+                }
+                else
+                {
+                    ini.Write("Icons", "ConfigContainer_ContainerBackgroundTexture", "");
+                }
+                if (button.Image?.Tag is string configCustomIconPath)
+                {
+                    ini.Write("Icons", "ConfigContainer_CustomIcon", configCustomIconPath);
+                }
+                else
+                {
+                    ini.Write("Icons", "ConfigContainer_CustomIcon", "");
+                }
             }
         }
 
@@ -455,6 +486,43 @@ namespace NitroDock
             ClearIcons();
             LoadIcons(ini);
             LoadConfigContainerBackgroundColor(ini);
+
+            // Load configuration container settings
+            string configTexturePath = ini.Read("Icons", "ConfigContainer_ContainerBackgroundTexture");
+            string configCustomIconPath = ini.Read("Icons", "ConfigContainer_CustomIcon");
+            var configContainer = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
+                .FirstOrDefault(c => (c.Controls[0] as Button).Tag?.ToString() == "NitroDockMain_Configuration");
+
+            if (configContainer != null)
+            {
+                // Load texture
+                if (!string.IsNullOrEmpty(configTexturePath) && File.Exists(configTexturePath))
+                {
+                    try
+                    {
+                        configContainer.BackgroundImage = Image.FromFile(configTexturePath);
+                        configContainer.BackgroundImage.Tag = configTexturePath;
+                        configContainer.BackgroundImageLayout = ImageLayout.Stretch;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Error loading config container texture: {ex}");
+                    }
+                }
+                // Load custom icon
+                if (!string.IsNullOrEmpty(configCustomIconPath) && File.Exists(configCustomIconPath))
+                {
+                    try
+                    {
+                        (configContainer.Controls[0] as Button).Image = ResizeImage(Image.FromFile(configCustomIconPath), IconSize, IconSize);
+                        (configContainer.Controls[0] as Button).Image.Tag = configCustomIconPath;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Error loading config container custom icon: {ex}");
+                    }
+                }
+            }
         }
 
         private void LoadConfigContainerBackgroundColor(IniFile ini)
@@ -497,18 +565,23 @@ namespace NitroDock
 
                 if (!string.IsNullOrEmpty(customIcon))
                 {
-                    string fullCustomIconPath = Path.Combine(appPath, customIcon);
-                    if (File.Exists(fullCustomIconPath))
+                    Log($"Loading custom icon for Icon{index}: {customIcon}");
+                    if (File.Exists(customIcon))
                     {
                         try
                         {
-                            (container.Controls[0] as Button).Image = ResizeImage(Image.FromFile(fullCustomIconPath), IconSize, IconSize);
+                            (container.Controls[0] as Button).Image = ResizeImage(Image.FromFile(customIcon), IconSize, IconSize);
                             (container.Controls[0] as Button).Image.Tag = customIcon;
+                            Log($"Successfully loaded custom icon for Icon{index}");
                         }
                         catch (Exception ex)
                         {
-                            Log($"Error loading custom icon: {ex}");
+                            Log($"Error loading custom icon for Icon{index}: {ex.Message}");
                         }
+                    }
+                    else
+                    {
+                        Log($"Custom icon file not found for Icon{index}: {customIcon}");
                     }
                 }
 
@@ -524,18 +597,17 @@ namespace NitroDock
                 string texturePath = ini.Read("Icons", $"Icon{index}_ContainerBackgroundTexture");
                 if (!string.IsNullOrEmpty(texturePath))
                 {
-                    string fullTexturePath = Path.Combine(appPath, texturePath);
-                    if (File.Exists(fullTexturePath))
+                    if (File.Exists(texturePath))
                     {
                         try
                         {
-                            container.BackgroundImage = Image.FromFile(fullTexturePath);
+                            container.BackgroundImage = Image.FromFile(texturePath);
                             container.BackgroundImage.Tag = texturePath;
                             container.BackgroundImageLayout = ImageLayout.Stretch;
                         }
                         catch (Exception ex)
                         {
-                            Log($"Error loading texture: {ex}");
+                            Log($"Error loading texture for Icon{index}: {ex.Message}");
                             container.BackgroundImage = null;
                         }
                     }
@@ -552,6 +624,22 @@ namespace NitroDock
         {
             string skinPath = Path.Combine(appPath, "NitroSkins", skinName, "01.png");
             Log($"Applying skin: {skinName} from {skinPath}");
+
+            // Save the current custom icons and their containers
+            var containers = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
+                .Where(c => (c.Controls[0] as Button).Tag.ToString() != "NitroDockMain_Configuration")
+                .ToList();
+
+            List<(string path, string customIcon, Color backColor, string texturePath)> iconStates = new List<(string, string, Color, string)>();
+            foreach (var container in containers)
+            {
+                var button = container.Controls[0] as Button;
+                string path = button.Tag?.ToString() ?? string.Empty;
+                string customIcon = button.Image?.Tag as string;
+                Color backColor = container.BackColor;
+                string texturePath = container.BackgroundImage?.Tag as string;
+                iconStates.Add((path, customIcon, backColor, texturePath));
+            }
 
             if (File.Exists(skinPath))
             {
@@ -599,6 +687,46 @@ namespace NitroDock
             this.Focus();
             EnsureFormOnScreen();
             Log($"Form restored: Visible={this.Visible}, Location={this.Location}");
+
+            // Reapply custom icons and states
+            int index = 0;
+            foreach (var container in containers)
+            {
+                var button = container.Controls[0] as Button;
+                var (path, customIcon, backColor, texturePath) = iconStates[index];
+
+                if (!string.IsNullOrEmpty(customIcon) && File.Exists(customIcon))
+                {
+                    try
+                    {
+                        button.Image = ResizeImage(Image.FromFile(customIcon), IconSize, IconSize);
+                        button.Image.Tag = customIcon;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Error reapplying custom icon: {ex}");
+                    }
+                }
+
+                container.BackColor = backColor;
+
+                if (!string.IsNullOrEmpty(texturePath) && File.Exists(texturePath))
+                {
+                    try
+                    {
+                        container.BackgroundImage = Image.FromFile(texturePath);
+                        container.BackgroundImage.Tag = texturePath;
+                        container.BackgroundImageLayout = ImageLayout.Stretch;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Error reapplying texture: {ex}");
+                        container.BackgroundImage = null;
+                    }
+                }
+
+                index++;
+            }
         }
 
         private void OnMouseMiddleButtonDown(MouseEventArgs e)
@@ -706,13 +834,19 @@ namespace NitroDock
         private void ShowIconProperties(Button button)
         {
             NitroDockMain_IconProperties propertiesForm = new NitroDockMain_IconProperties(button);
+
             if (button.Tag?.ToString() == "NitroDockMain_Configuration")
             {
                 propertiesForm.HideRemoveOption();
             }
-            propertiesForm.ShowDialog();
-            SaveIconToIni(button.Parent as IconContainer);
+
+            if (propertiesForm.ShowDialog() == DialogResult.OK)
+            {
+                SaveIconToIni(button.Parent as IconContainer);
+            }
         }
+
+
 
         private void PositionConfigButton(IconContainer configContainer)
         {
@@ -1203,7 +1337,7 @@ namespace NitroDock
             };
         }
 
-        private Bitmap ResizeImage(Image image, int width, int height)
+        public Bitmap ResizeImage(Image image, int width, int height)
         {
             if (image == null)
                 return null;

@@ -192,7 +192,50 @@ namespace NitroDock
         {
             this.BackgroundImage = null;
             this.BackColor = Color.Transparent;
+
+            // Save the transparency state to the INI file
+            string iniPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroDockX.ini");
+            IniFile ini = new IniFile(iniPath);
+
+            // Find the index of this IconContainer in the parent's controls
+            int index = -1;
+            if (this.Parent != null)
+            {
+                for (int i = 0; i < this.Parent.Controls.Count; i++)
+                {
+                    if (this.Parent.Controls[i] == this)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+
+            // If this is not the ConfigContainer, save the transparency state
+            if (index >= 0 && (_iconButton.Tag?.ToString() != "NitroDockMain_Configuration"))
+            {
+                // Calculate the actual icon index (excluding the ConfigContainer)
+                int iconIndex = 0;
+                for (int i = 0; i < this.Parent.Controls.Count; i++)
+                {
+                    if (this.Parent.Controls[i] is IconContainer container &&
+                        container != this &&
+                        (container.Controls[0] as Button)?.Tag?.ToString() != "NitroDockMain_Configuration")
+                    {
+                        iconIndex++;
+                    }
+                    else if (this.Parent.Controls[i] == this)
+                    {
+                        break;
+                    }
+                }
+
+                // Save the transparency state
+                ini.Write("Icons", $"Icon{iconIndex}_ContainerBackgroundColor", Color.Transparent.ToArgb().ToString());
+                ini.Write("Icons", $"Icon{iconIndex}_ContainerBackgroundTexture", "");
+            }
         }
+
 
         public void UpdateIconSize(int newSize)
         {

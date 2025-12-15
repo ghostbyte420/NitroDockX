@@ -48,6 +48,8 @@ namespace NitroDock
             {
                 HideRemoveOption();
             }
+
+            this.DialogResult = DialogResult.Cancel;
         }
 
         // Centers the PictureBox in the panel
@@ -165,12 +167,15 @@ namespace NitroDock
         {
             try
             {
-                // Update the button's image with the selected icon
                 targetButton.Image = ResizeImage(Image.FromFile(iconPath), targetButton.Width, targetButton.Height);
                 targetButton.Image.Tag = iconPath;
-                // Notify main form to save
-                (this.Owner as NitroDockMain)?.SaveIconToIni(targetButton.Parent as IconContainer);
-                // Close the form
+
+                if (this.Owner is NitroDockMain mainForm)
+                {
+                    mainForm.SaveIconToIni(targetButton.Parent as IconContainer);
+                }
+
+                this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
@@ -178,6 +183,8 @@ namespace NitroDock
                 MessageBox.Show($"Error loading icon: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+
 
         // Resizes the image to fit the button
         private Bitmap ResizeImage(Image image, int width, int height)
