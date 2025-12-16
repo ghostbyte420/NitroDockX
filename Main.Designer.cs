@@ -54,7 +54,6 @@
             Opacity = 0.5D;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "NitroDockX";
-            TopMost = true;
             ResumeLayout(false);
         }
 

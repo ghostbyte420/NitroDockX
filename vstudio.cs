@@ -245,37 +245,73 @@ namespace NitroDock
                 (this.Height - _iconButton.Height) / 2
             );
 
-            string path = _iconButton.Tag.ToString();
+            string customIconPath = _iconButton.Image?.Tag as string;
+
             try
             {
-                if (path == "NitroDockMain_Configuration")
+                if (!string.IsNullOrEmpty(customIconPath) && File.Exists(customIconPath))
                 {
-                    string configIconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroIcons", "Config.png");
-                    if (File.Exists(configIconPath))
-                    {
-                        using (Image customImage = Image.FromFile(configIconPath))
-                        {
-                            _iconButton.Image = ResizeImage(customImage, newSize, newSize);
-                        }
-                    }
-                    else
-                    {
-                        _iconButton.Image = ResizeImage(SystemIcons.Shield.ToBitmap(), newSize, newSize);
-                    }
-                }
-                else if (_iconButton.Image?.Tag is string customIconPath && File.Exists(customIconPath))
-                {
+                    // Reload and resize the custom icon
                     using (Image customImage = Image.FromFile(customIconPath))
                     {
                         _iconButton.Image = ResizeImage(customImage, newSize, newSize);
+                        _iconButton.Image.Tag = customIconPath;
                     }
                 }
                 else
                 {
-                    Icon icon = GetIconForPath(path);
-                    if (icon != null)
+                    string path = _iconButton.Tag?.ToString() ?? string.Empty;
+                    Icon icon = null;
+
+                    if (path == "NitroDockMain_Configuration")
                     {
+                        string configIconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "NitroIcons", "Config.png");
+                        if (File.Exists(configIconPath))
+                        {
+                            using (Image configImage = Image.FromFile(configIconPath))
+                            {
+                                _iconButton.Image = ResizeImage(configImage, newSize, newSize);
+                                _iconButton.Image.Tag = configIconPath;
+                            }
+                        }
+                        else
+                        {
+                            _iconButton.Image = ResizeImage(SystemIcons.Shield.ToBitmap(), newSize, newSize);
+                        }
+                    }
+                    else if (File.Exists(path))
+                    {
+                        icon = Icon.ExtractAssociatedIcon(path);
                         _iconButton.Image = ResizeImage(icon.ToBitmap(), newSize, newSize);
+                    }
+                    else if (Directory.Exists(path))
+                    {
+                        try
+                        {
+                            SHFILEINFO shinfo = new SHFILEINFO();
+                            uint attributes = (uint)FileAttributes.Directory;
+                            uint result = SHGetFileInfo(
+                                path,
+                                attributes,
+                                out shinfo,
+                                (uint)Marshal.SizeOf(shinfo),
+                                0x000000100 | 0x000000000 | 0x000000010);
+                            if (shinfo.hIcon != IntPtr.Zero)
+                            {
+                                using (Icon dirIcon = Icon.FromHandle(shinfo.hIcon))
+                                {
+                                    _iconButton.Image = ResizeImage(dirIcon.ToBitmap(), newSize, newSize);
+                                }
+                            }
+                            else
+                            {
+                                _iconButton.Image = ResizeImage(SystemIcons.Application.ToBitmap(), newSize, newSize);
+                            }
+                        }
+                        catch
+                        {
+                            _iconButton.Image = ResizeImage(SystemIcons.Application.ToBitmap(), newSize, newSize);
+                        }
                     }
                     else
                     {
@@ -289,6 +325,7 @@ namespace NitroDock
                 _iconButton.Image = ResizeImage(SystemIcons.Application.ToBitmap(), newSize, newSize);
             }
         }
+
 
         private Icon GetIconForPath(string path)
         {

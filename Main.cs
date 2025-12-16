@@ -797,6 +797,10 @@ namespace NitroDock
             propertiesItem.Click += (s, e) => ShowIconProperties(configContainer.Controls[0] as Button);
             configContextMenu.Items.Add(propertiesItem);
 
+            ToolStripMenuItem DockTexturizer = new ToolStripMenuItem("Dock Texturizer");
+            DockTexturizer.Click += (s, e) => OpenDockTexturizer();
+            configContextMenu.Items.Add(DockTexturizer);
+
             ToolStripMenuItem skinPropertiesItem = new ToolStripMenuItem("Style Properties");
             skinPropertiesItem.Click += (s, e) => OpenStyleProperties();
             configContextMenu.Items.Add(skinPropertiesItem);
@@ -829,6 +833,13 @@ namespace NitroDock
         {
             NitroDockMain_StyleProperties stylePropertiesForm = new NitroDockMain_StyleProperties(this);
             stylePropertiesForm.ShowDialog();
+        }
+
+
+        private void OpenDockTexturizer()
+        {
+            DockTexturizer dockTexturizerForm = new DockTexturizer();
+            dockTexturizerForm.ShowDialog();
         }
 
         private void ShowIconProperties(Button button)
@@ -1179,27 +1190,85 @@ namespace NitroDock
             UpdateRoundedRegion();
         }
 
+
         public void UpdateAllIconSizes(int newSize)
         {
             IconSize = Math.Clamp(newSize, 16, 64);
+
             foreach (IconContainer container in NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>())
             {
                 container.UpdateIconSize(IconSize);
-                if (container.Controls[0] is Button button && button.Image != null)
-                    button.Image = ResizeImage(button.Image, IconSize, IconSize);
+
+                if (container.Controls[0] is Button button)
+                {
+                    string customIconPath = button.Image?.Tag as string;
+
+                    // If a custom icon is set, reapply it
+                    if (!string.IsNullOrEmpty(customIconPath) && File.Exists(customIconPath))
+                    {
+                        try
+                        {
+                            // Reload and resize the custom icon
+                            Image customImage = Image.FromFile(customIconPath);
+                            button.Image = ResizeImage(customImage, IconSize, IconSize);
+                            button.Image.Tag = customIconPath;
+                            customImage.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Error reapplying custom icon: {ex.Message}");
+                            // Fallback to default icon if custom icon fails
+                            button.Image = ResizeImage(SystemIcons.Application.ToBitmap(), IconSize, IconSize);
+                        }
+                    }
+                }
             }
+
             // Explicitly update config button
             var configContainer = NitroDockMain_OpacityPanel.Controls.OfType<IconContainer>()
                 .FirstOrDefault(c => (c.Controls[0] as Button).Tag?.ToString() == "NitroDockMain_Configuration");
+
             if (configContainer != null)
             {
                 configContainer.UpdateIconSize(IconSize);
-                if (configContainer.Controls[0] is Button configButton && configButton.Image != null)
-                    configButton.Image = ResizeImage(configButton.Image, IconSize, IconSize);
+
+                if (configContainer.Controls[0] is Button configButton)
+                {
+                    string configCustomIconPath = configButton.Image?.Tag as string;
+
+                    if (!string.IsNullOrEmpty(configCustomIconPath) && File.Exists(configCustomIconPath))
+                    {
+                        try
+                        {
+                            // Reload and resize the custom icon for the config button
+                            Image customImage = Image.FromFile(configCustomIconPath);
+                            configButton.Image = ResizeImage(customImage, IconSize, IconSize);
+                            configButton.Image.Tag = configCustomIconPath;
+                            customImage.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Error reapplying config custom icon: {ex.Message}");
+                            configButton.Image = ResizeImage(SystemIcons.Shield.ToBitmap(), IconSize, IconSize);
+                        }
+                    }
+                }
             }
+
+            // Force a visual refresh
+            NitroDockMain_OpacityPanel.Invalidate(true);
+            NitroDockMain_OpacityPanel.Update();
+            NitroDockMain_OpacityPanel.Refresh();
+
             SnapToEdge(currentDockPosition);
             ApplyGlowEffect();
         }
+
+
+
+
+
+
 
         public void UpdateAllIconSpacings(int newSpacing)
         {
@@ -1357,6 +1426,95 @@ namespace NitroDock
             }
 
             return destImage;
+        }
+
+        private Icon GetIconForPath(string path)
+        {
+            if (File.Exists(path))
+            {
+                return Icon.ExtractAssociatedIcon(path);
+            }
+            else if (Directory.Exists(path))
+            {
+                return GetFolderIcon(path);
+            }
+            else if (path.Length == 2 && path.EndsWith(":"))
+            {
+                return GetDriveIcon(path);
+            }
+            return SystemIcons.Application;
+        }
+
+        private Icon GetFolderIcon(string folderPath)
+        {
+            try
+            {
+                SHFILEINFO shinfo = new SHFILEINFO();
+                uint attributes = (uint)FileAttributes.Directory;
+                uint result = SHGetFileInfo(
+                    folderPath,
+                    attributes,
+                    out shinfo,
+                    (uint)Marshal.SizeOf(shinfo),
+                    0x000000100 | 0x000000000 | 0x000000010);
+                if (shinfo.hIcon != IntPtr.Zero)
+                {
+                    return Icon.FromHandle(shinfo.hIcon);
+                }
+            }
+            catch { }
+            try
+            {
+                IntPtr[] largeIconPtr = new IntPtr[1];
+                int result = ExtractIconEx("shell32.dll", 3, largeIconPtr, null, 1);
+                if (result > 0 && largeIconPtr[0] != IntPtr.Zero)
+                {
+                    return Icon.FromHandle(largeIconPtr[0]);
+                }
+            }
+            catch { }
+            return CreateFolderIcon();
+        }
+
+        private Icon GetDriveIcon(string drivePath)
+        {
+            try
+            {
+                DriveInfo drive = new DriveInfo(drivePath);
+                if (drive.DriveType == DriveType.Removable || drive.DriveType == DriveType.Fixed)
+                {
+                    IntPtr[] largeIconPtr = new IntPtr[1];
+                    int result = ExtractIconEx("shell32.dll", 8, largeIconPtr, null, 1);
+                    if (result > 0 && largeIconPtr[0] != IntPtr.Zero)
+                    {
+                        return Icon.FromHandle(largeIconPtr[0]);
+                    }
+                }
+            }
+            catch { }
+            return SystemIcons.WinLogo;
+        }
+
+        private Icon CreateFolderIcon()
+        {
+            Bitmap folderBitmap = new Bitmap(32, 32);
+            using (Graphics g = Graphics.FromImage(folderBitmap))
+            {
+                g.Clear(Color.Transparent);
+                g.FillRectangle(Brushes.Goldenrod, 4, 8, 24, 16);
+                g.FillPolygon(Brushes.Goldenrod, new Point[] {
+            new Point(4, 8),
+            new Point(12, 4),
+            new Point(28, 4),
+            new Point(28, 8)
+        });
+                g.DrawRectangle(Pens.Black, 4, 8, 23, 16);
+                g.DrawLine(Pens.White, 4, 8, 28, 8);
+                g.DrawLine(Pens.White, 4, 8, 12, 4);
+                g.DrawLine(Pens.DarkGray, 28, 8, 28, 24);
+                g.DrawLine(Pens.DarkGray, 4, 24, 28, 24);
+            }
+            return Icon.FromHandle(folderBitmap.GetHicon());
         }
     }
 }

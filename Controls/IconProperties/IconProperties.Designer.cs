@@ -163,13 +163,13 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(676, 474);
             Controls.Add(NitroDockMain_SplitContainer);
-            FormBorderStyle = FormBorderStyle.FixedSingle;
+            FormBorderStyle = FormBorderStyle.FixedToolWindow;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "NitroDockMain_IconProperties";
             Opacity = 0.85D;
-            StartPosition = FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.CenterParent;
             Text = "NitroDockX: Icon Properties";
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.ResumeLayout(false);
             NitroDockMain_SplitContainer_Panel2__IconProperties_OpacityPanel_Information.PerformLayout();

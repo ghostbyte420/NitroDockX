@@ -7,6 +7,9 @@
     <Compile Update="Controls\Configuration\Configuration.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Controls\DockTexturizer\DockTexturizer.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Controls\IconContainerTextures\IconContainerTextures.cs">
       <SubType>Form</SubType>
     </Compile>

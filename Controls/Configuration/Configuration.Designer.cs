@@ -76,12 +76,12 @@
             NitroDockMain_Configuration_OpacityPanel.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel.Name = "NitroDockMain_Configuration_OpacityPanel";
             NitroDockMain_Configuration_OpacityPanel.Opacity = 0.8F;
-            NitroDockMain_Configuration_OpacityPanel.Size = new Size(374, 619);
+            NitroDockMain_Configuration_OpacityPanel.Size = new Size(374, 602);
             NitroDockMain_Configuration_OpacityPanel.TabIndex = 0;
             // 
             // NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges
             // 
-            NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges.Location = new Point(13, 564);
+            NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges.Location = new Point(14, 551);
             NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges.Name = "NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges";
             NitroDockMain_Configuration_OpacityPanel_Button_ApplyChanges.Size = new Size(348, 43);
@@ -122,7 +122,7 @@
             NitroDockMain_Configuration_OpacityPanel_GroupBox.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox";
             NitroDockMain_Configuration_OpacityPanel_GroupBox.Padding = new Padding(4, 3, 4, 3);
-            NitroDockMain_Configuration_OpacityPanel_GroupBox.Size = new Size(347, 545);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox.Size = new Size(347, 534);
             NitroDockMain_Configuration_OpacityPanel_GroupBox.TabIndex = 12;
             NitroDockMain_Configuration_OpacityPanel_GroupBox.TabStop = false;
             NitroDockMain_Configuration_OpacityPanel_GroupBox.Text = "Customizations";
@@ -153,7 +153,7 @@
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Font = new Font("Segoe UI", 10F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.FormattingEnabled = true;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Location = new Point(173, 283);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Location = new Point(173, 282);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_DockCorners.Size = new Size(165, 25);
@@ -164,7 +164,7 @@
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.AutoSize = true;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.Font = new Font("Segoe UI", 11F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.ForeColor = Color.DeepSkyBlue;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.Location = new Point(54, 285);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.Location = new Point(54, 284);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.Margin = new Padding(4, 0, 4, 0);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockCorners.Size = new Size(100, 20);
@@ -175,7 +175,7 @@
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Font = new Font("Segoe UI", 10F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.FormattingEnabled = true;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Location = new Point(170, 402);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Location = new Point(170, 401);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_ComboBox_HighlightGlow.Size = new Size(167, 25);
@@ -186,7 +186,7 @@
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.AutoSize = true;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.Font = new Font("Segoe UI", 11F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.ForeColor = Color.DeepSkyBlue;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.Location = new Point(48, 404);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.Location = new Point(48, 403);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.Margin = new Padding(4, 0, 4, 0);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_HighlightGlow.Size = new Size(106, 20);
@@ -197,7 +197,7 @@
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.BackColor = Color.FromArgb(64, 64, 64);
             NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.Image = NitroDockX.Properties.Resources.div_001;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.Location = new Point(7, 486);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.Location = new Point(8, 485);
             NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider";
             NitroDockMain_Configuration_OpacityPanel_GroupBox__PictureBox_Divider.Size = new Size(331, 12);
@@ -208,7 +208,7 @@
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.AutoSize = true;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.ForeColor = Color.GhostWhite;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.Location = new Point(9, 510);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.Location = new Point(8, 503);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_CheckBox_LaunchOnRestart.Size = new Size(331, 24);
@@ -275,7 +275,7 @@
             // NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.AutoSize = false;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Location = new Point(171, 444);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Location = new Point(171, 443);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Maximum = 50;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_IconSpacing";
@@ -299,7 +299,7 @@
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.AutoSize = true;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.Font = new Font("Segoe UI", 11F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.ForeColor = Color.DeepSkyBlue;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.Location = new Point(57, 444);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.Location = new Point(57, 443);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.Margin = new Padding(4, 0, 4, 0);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_IconSpacing.Size = new Size(97, 20);
@@ -319,7 +319,7 @@
             // NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.AutoSize = false;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Location = new Point(171, 363);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Location = new Point(171, 362);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Maximum = 64;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_ResizeIcons.Minimum = 16;
@@ -346,7 +346,7 @@
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.AutoSize = true;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.Font = new Font("Segoe UI", 11F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.ForeColor = Color.DeepSkyBlue;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.Location = new Point(7, 365);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.Location = new Point(7, 364);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.Margin = new Padding(4, 0, 4, 0);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_ResizeIcons.Size = new Size(147, 20);
@@ -356,7 +356,7 @@
             // NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity
             // 
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.AutoSize = false;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Location = new Point(172, 324);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Location = new Point(172, 323);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Margin = new Padding(4, 3, 4, 3);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Maximum = 100;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_TrackBar_DockOpacity";
@@ -370,7 +370,7 @@
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.AutoSize = true;
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.Font = new Font("Segoe UI", 11F);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.ForeColor = Color.DeepSkyBlue;
-            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.Location = new Point(27, 324);
+            NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.Location = new Point(27, 323);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.Margin = new Padding(4, 0, 4, 0);
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.Name = "NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity";
             NitroDockMain_Configuration_OpacityPanel_GroupBox_Label_DockOpacity.Size = new Size(127, 20);
@@ -405,7 +405,7 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
-            ClientSize = new Size(374, 619);
+            ClientSize = new Size(374, 602);
             Controls.Add(NitroDockMain_Configuration_OpacityPanel);
             FormBorderStyle = FormBorderStyle.FixedToolWindow;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -415,7 +415,7 @@
             Name = "NitroDockMain_Configuration";
             Opacity = 0.75D;
             StartPosition = FormStartPosition.CenterParent;
-            Text = "NitroDockX: Dock Configuration";
+            Text = "NitroDockX: Configuration";
             NitroDockMain_Configuration_OpacityPanel.ResumeLayout(false);
             NitroDockMain_Configuration_OpacityPanel_GroupBox.ResumeLayout(false);
             NitroDockMain_Configuration_OpacityPanel_GroupBox.PerformLayout();

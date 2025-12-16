@@ -1,4 +1,4 @@
-﻿namespace NitroDockX
+﻿namespace NitroDock
 {
     partial class NitroDockMain_IconContainerTextures
     {
@@ -88,7 +88,7 @@
             // NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image
             // 
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image.BackColor = Color.Transparent;
-            NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image.BackgroundImage = Properties.Resources.bckd_003;
+            NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image.BackgroundImage = NitroDockX.Properties.Resources.bckd_003;
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image.BackgroundImageLayout = ImageLayout.Stretch;
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image.Dock = DockStyle.Bottom;
             NitroDockMain_SplitContainer_Panel2__TextureProperties_OpacityPanel_Image.Location = new Point(0, 253);
@@ -162,8 +162,10 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(676, 474);
             Controls.Add(NitroDockMain_SplitContainer);
+            FormBorderStyle = FormBorderStyle.FixedToolWindow;
             Name = "NitroDockMain_IconContainerTextures";
             Opacity = 0.85D;
+            StartPosition = FormStartPosition.CenterParent;
             Text = "NitroDockX: Icon Container Textures";
             NitroDockMain_SplitContainer.Panel1.ResumeLayout(false);
             NitroDockMain_SplitContainer.Panel2.ResumeLayout(false);

@@ -1,7 +1,7 @@
 ﻿using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace NitroDockX
+namespace NitroDock
 {
     partial class NitroDockMain_StyleProperties
     {
@@ -80,7 +80,7 @@ namespace NitroDockX
             // NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image
             // 
             NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image.BackColor = Color.Transparent;
-            NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image.BackgroundImage = Properties.Resources.bckd_002;
+            NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image.BackgroundImage = NitroDockX.Properties.Resources.bckd_002;
             NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image.BackgroundImageLayout = ImageLayout.Stretch;
             NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image.Dock = DockStyle.Bottom;
             NitroDockMain_SplitContainer_Panel2__StyleProperties_OpacityPanel_Image.Location = new Point(0, 253);
@@ -153,9 +153,11 @@ namespace NitroDockX
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(676, 474);
             Controls.Add(NitroDockMain_SplitContainer);
+            FormBorderStyle = FormBorderStyle.FixedToolWindow;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "NitroDockMain_StyleProperties";
             Opacity = 0.85D;
+            StartPosition = FormStartPosition.CenterParent;
             Text = "NitroDockX: Style Properties";
             NitroDockMain_SplitContainer.Panel1.ResumeLayout(false);
             NitroDockMain_SplitContainer.Panel2.ResumeLayout(false);
