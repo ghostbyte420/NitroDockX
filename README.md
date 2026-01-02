@@ -2,7 +2,7 @@
 ---
 ### A Customizable RocketDock Clone for Windows 11
 
-[![Demo Video](https://github.com/user-attachments/assets/171776b6-8597-42a0-8f8f-d7bb084738e6)](https://streamable.com/tg5p6e)
+<img width="860" height="454" alt="yea" src="https://github.com/user-attachments/assets/4b0f4f64-4f9f-4679-8e09-4e4e0af18af8" />
 
 #### **NitroDockX** is a **modern, lightweight, and highly customizable** alternative to RocketDock, designed **exclusively for Windows 11**. Whether you're a power user, a gamer, or someone who loves a clean desktop, NitroDockX lets you **organize your apps, folders, and files in style**... <br><br>
 
